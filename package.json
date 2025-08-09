@@ -1,7 +1,7 @@
 {
   "name": "configrep",
   "version": "1.0.0",
-  "description": "A powerful CLI tool for exploring and managing configuration files across your projects",
+  "description": "CLI tool for exploring configuration files",
   "main": "index.ts",
   "module": "index.ts",
   "type": "module",
@@ -31,6 +31,15 @@
   "bugs": {
     "url": "https://github.com/mattcookio/configrep/issues"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "index.ts",
+    "miller-tree-component.tsx",
+    "interactive-search-component.tsx",
+    "README.md"
+  ],
   "scripts": {
     "start": "bun run index.ts",
     "dev": "bun run index.ts"
