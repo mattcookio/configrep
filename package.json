@@ -25,11 +25,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/configrep.git"
+    "url": "https://github.com/mattcookio/configrep.git"
   },
-  "homepage": "https://github.com/yourusername/configrep#readme",
+  "homepage": "https://github.com/mattcookio/configrep#readme",
   "bugs": {
-    "url": "https://github.com/yourusername/configrep/issues"
+    "url": "https://github.com/mattcookio/configrep/issues"
   },
   "scripts": {
     "start": "bun run index.ts",
