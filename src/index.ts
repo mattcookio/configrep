@@ -7,8 +7,8 @@ import { join, extname, basename, relative, resolve } from 'path';
 import { existsSync } from 'fs';
 import React from 'react';
 import { render } from 'ink';
-import MillerTreeComponent from './miller-tree-component.js';
-import InteractiveSearchComponent from './interactive-search-component.js';
+import MillerTree from './components/MillerTree';
+import InteractiveSearch from './components/InteractiveSearch';
 
 interface ConfigFile {
   path: string;
@@ -619,7 +619,7 @@ class ConfigExplorer {
 
       // Use a unique key to force fresh component instance each time
       const app = render(
-        React.createElement(MillerTreeComponent, {
+        React.createElement(MillerTree, {
           key: Date.now(), // Force fresh instance
           tree,
           onExit: handleExit
@@ -663,7 +663,7 @@ class ConfigExplorer {
 
       // Use a unique key to force fresh component instance each time
       const app = render(
-        React.createElement(InteractiveSearchComponent, {
+        React.createElement(InteractiveSearch, {
           key: Date.now(), // Force fresh instance
           allEntries,
           onExit: handleExit,

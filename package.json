@@ -39,9 +39,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build index.ts --outdir dist --target node --format esm --minify --sourcemap",
-    "start": "bun run index.ts",
-    "dev": "bun run index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --minify --sourcemap",
+    "start": "bun run src/index.ts",
+    "dev": "bun run src/index.ts",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {

@@ -30,7 +30,7 @@ interface TreeNode {
   parent?: TreeNode;
 }
 
-interface MillerTreeComponentProps {
+interface MillerTreeProps {
   tree: TreeNode;
   onExit: () => void;
 }
@@ -59,7 +59,7 @@ const getFileIcon = (type: string): string => {
   }
 };
 
-const MillerTreeComponent: React.FC<MillerTreeComponentProps> = ({ tree, onExit }) => {
+const MillerTree: React.FC<MillerTreeProps> = ({ tree, onExit }) => {
   const { stdout } = useStdout();
   const [columns, setColumns] = useState<Column[]>([]);
   const [activeColumnIndex, setActiveColumnIndex] = useState(0);
@@ -504,4 +504,4 @@ const MillerTreeComponent: React.FC<MillerTreeComponentProps> = ({ tree, onExit 
   );
 };
 
-export default MillerTreeComponent;
+export default MillerTree;

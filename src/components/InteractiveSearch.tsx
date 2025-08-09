@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import MillerTreeComponent from './miller-tree-component.js';
+import MillerTree from './MillerTree';
 
 interface ConfigEntry {
   key: string;
@@ -26,7 +26,7 @@ interface InteractiveSearchProps {
   buildFilteredTree: (entries: ConfigEntry[], filter: string) => Promise<TreeNode>;
 }
 
-const InteractiveSearchComponent: React.FC<InteractiveSearchProps> = ({ 
+const InteractiveSearch: React.FC<InteractiveSearchProps> = ({ 
   allEntries, 
   onExit, 
   buildFilteredTree 
@@ -126,7 +126,7 @@ const InteractiveSearchComponent: React.FC<InteractiveSearchProps> = ({
 
   // Navigation mode - show Miller Columns
   return (
-    <MillerTreeComponent 
+    <MillerTree 
       key={`nav-${Date.now()}`}
       tree={filteredTree} 
       onExit={onExit}
@@ -134,4 +134,4 @@ const InteractiveSearchComponent: React.FC<InteractiveSearchProps> = ({
   );
 };
 
-export default InteractiveSearchComponent;
+export default InteractiveSearch;
