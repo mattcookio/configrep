@@ -2,12 +2,12 @@
   "name": "configrep",
   "version": "1.0.0",
   "description": "CLI tool for exploring configuration files",
-  "main": "index.ts",
-  "module": "index.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "type": "module",
   "bin": {
-    "configrep": "./index.ts",
-    "crep": "./index.ts"
+    "configrep": "./dist/index.js",
+    "crep": "./dist/index.js"
   },
   "keywords": [
     "config",
@@ -35,14 +35,14 @@
     "node": ">=18.0.0"
   },
   "files": [
-    "index.ts",
-    "miller-tree-component.tsx",
-    "interactive-search-component.tsx",
+    "dist/",
     "README.md"
   ],
   "scripts": {
+    "build": "bun build index.ts --outdir dist --target node --format esm --minify --sourcemap",
     "start": "bun run index.ts",
-    "dev": "bun run index.ts"
+    "dev": "bun run index.ts",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
