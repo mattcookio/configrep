@@ -91,15 +91,14 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     const terminalHeight = stdout?.rows || 24;
     
     // Count reserved lines:
-    // - Header: "📂 Config File Explorer" (1 line)
-    // - Help text: "↑↓/jk: Navigate | ←→/hl: Switch columns..." (1 line)
+    // - Header with controls: "ConfiGREP | ..." (2 lines when not filtering, 1 line when filtering)
     // - Breadcrumb (when columns are hidden): "Path: ..." (0-1 line, let's assume 1)
     // - Column title: "▶ filename" (1 line)
     // - Bottom margin before status (1 line)
     // - Status message OR full value display (2-3 lines for full value)
     // - Terminal padding/margins (1-2 lines for safety)
     
-    let reservedLines = 8; // Base reservation
+    let reservedLines = filterMode ? 8 : 9; // Base reservation (extra line for controls when not filtering)
     
     // Add extra line if we're showing a full value (which can be 2-3 lines)
     const currentColumn = columns[activeColumnIndex];
@@ -916,14 +915,22 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
 
   return (
     <Box flexDirection="column">
-      <Box marginBottom={1}>
-        <Text bold color="blue">📂 Config File Explorer</Text>
-      </Box>
-      <Box marginBottom={1}>
+      <Box marginBottom={1} flexWrap="wrap">
         {filterMode ? (
-          <Text dimColor>Typing filter... | Esc: Cancel | Enter: Apply</Text>
+          <Box>
+            <Text bold color="blue">ConfiGREP</Text>
+            <Text dimColor> | Typing filter... | Esc: Cancel | Enter: Apply</Text>
+          </Box>
         ) : (
-          <Text dimColor>↑↓/jk: Navigate | ←→/hl: Switch columns | f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
+          <Box flexDirection="column">
+            <Box>
+              <Text bold color="blue">ConfiGREP</Text>
+              <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
+            </Box>
+            <Box>
+              <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
+            </Box>
+          </Box>
         )}
       </Box>
       
