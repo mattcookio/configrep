@@ -145,16 +145,38 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
     if (typeof value === 'object' && value !== null) {
-      // Store the object/array itself as a raw value
-      entries.push({
-        key: fullKey,
-        value: JSON.stringify(value),
-        file: filePath,
-        rawValue: value
-      });
-      // Always flatten children to make them searchable, even for nested formats
-      // We'll filter what to display in the UI
-      if (!Array.isArray(value)) {
+      if (Array.isArray(value)) {
+        // Check if it's an array of objects
+        const hasObjects = value.some(item => typeof item === 'object' && item !== null);
+        
+        if (hasObjects) {
+          // Array of objects - flatten each object with array index
+          value.forEach((item, index) => {
+            const arrayKey = `${fullKey}[${index}]`;
+            if (typeof item === 'object' && item !== null) {
+              // Recursively flatten the object in the array
+              flattenObject(item, arrayKey, entries, filePath, skipChildren);
+            } else {
+              // Primitive value in array
+              entries.push({
+                key: arrayKey,
+                value: String(item),
+                file: filePath,
+                rawValue: item
+              });
+            }
+          });
+        } else {
+          // Array of primitives - store as end value
+          entries.push({
+            key: fullKey,
+            value: JSON.stringify(value),
+            file: filePath,
+            rawValue: value
+          });
+        }
+      } else {
+        // Regular object - always flatten into dot notation
         flattenObject(value, fullKey, entries, filePath, skipChildren);
       }
     } else {

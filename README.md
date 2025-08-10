@@ -60,9 +60,9 @@ cfg search "localhost" --values-only
 ### Interactive Mode Features
 
 - **Miller Columns Navigation**: Browse through directories and files in a hierarchical view
-- **JSON Drilling**: For nested JSON values, press `→` or `l` to progressively drill into objects and arrays
+- **Flat Dot Notation**: All nested values are displayed using dot notation (e.g., `database.host`, `servers[0].port`)
 - **Quick Actions**: Press `Enter` on any config value to access copy/search actions
-- **Visual Indicators**: Nested values show `{n}` for objects or `[n]` for arrays to indicate drillable content
+- **Array Handling**: Arrays of primitives are shown as single values, while arrays of objects are expanded with index notation
 
 ## Options
 

@@ -41,6 +41,7 @@ interface Column {
   items: TreeNode[];
   selectedIndex: number;
   title: string;
+  scrollOffset: number;
 }
 
 interface ActionMenuState {
@@ -82,6 +83,34 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     selectedActionIndex: 0,
     columnIndex: -1
   });
+
+  // Calculate the maximum number of items that can be displayed
+  const getMaxVisibleItems = () => {
+    const terminalHeight = stdout?.rows || 24;
+    
+    // Count reserved lines:
+    // - Header: "📂 Config File Explorer - Miller Columns" (1 line)
+    // - Help text: "↑↓/jk: Navigate | ←→/hl: Switch columns..." (1 line)
+    // - Breadcrumb (when columns are hidden): "Path: ..." (0-1 line, let's assume 1)
+    // - Column title: "▶ filename" (1 line)
+    // - Bottom margin before status (1 line)
+    // - Status message OR full value display (2-3 lines for full value)
+    // - Terminal padding/margins (1-2 lines for safety)
+    
+    let reservedLines = 8; // Base reservation
+    
+    // Add extra line if we're showing a full value (which can be 2-3 lines)
+    const currentColumn = columns[activeColumnIndex];
+    if (currentColumn) {
+      const selectedItem = currentColumn.items[currentColumn.selectedIndex];
+      if (selectedItem?.isConfigEntry || currentColumn.title.startsWith('Found:')) {
+        reservedLines += 1; // Extra line for full value display
+      }
+    }
+    
+    // Ensure we always show at least 5 items even on very small terminals
+    return Math.max(5, terminalHeight - reservedLines);
+  };
 
   // Get the range of columns to display (always include the active column)
   const getColumnRange = () => {
@@ -156,7 +185,8 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     const rootColumn: Column = {
       items: Array.isArray(tree.children) ? tree.children : [],
       selectedIndex: 0,
-      title: tree.name
+      title: tree.name,
+      scrollOffset: 0
     };
     setColumns([rootColumn]);
     setActiveColumnIndex(0);
@@ -322,7 +352,8 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         } as TreeNode & { foundValue?: FoundValue };
       }),
       selectedIndex: 0,
-      title: `Found: ${entry.key}`
+      title: `Found: ${entry.key}`,
+      scrollOffset: 0
     };
 
     const newColumns = [...columns];
@@ -453,9 +484,22 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     const column = columns[columnIndex];
     if (!column || itemIndex >= column.items.length || itemIndex < 0) return;
     
-    // Just update the selected index in the current column
+    const maxVisible = getMaxVisibleItems();
     const newColumns = [...columns];
+    
+    // Update selected index
     newColumns[columnIndex] = { ...column, selectedIndex: itemIndex };
+    
+    // Adjust scroll offset if needed to keep selection visible
+    const currentScrollOffset = column.scrollOffset;
+    if (itemIndex < currentScrollOffset) {
+      // Scroll up to show the selected item
+      newColumns[columnIndex].scrollOffset = itemIndex;
+    } else if (itemIndex >= currentScrollOffset + maxVisible) {
+      // Scroll down to show the selected item
+      newColumns[columnIndex].scrollOffset = itemIndex - maxVisible + 1;
+    }
+    
     setColumns(newColumns);
   };
 
@@ -478,7 +522,8 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
       const newColumn: Column = {
         items: selectedItem.children,
         selectedIndex: 0,
-        title: selectedItem.name
+        title: selectedItem.name,
+        scrollOffset: 0
       };
       newColumns.push(newColumn);
     }
@@ -527,204 +572,52 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         setColumns(newColumns);
         setActiveColumnIndex(activeColumnIndex - 1);
       }
-    } else if (key.rightArrow || (input === 'l' && !key.ctrl && !key.meta && !key.shift)) {
+      } else if (key.rightArrow || (input === 'l' && !key.ctrl && !key.meta && !key.shift)) {
       // First check if current item can be "opened" (has actions or children)
       const selectedItem = currentColumn.items[currentColumn.selectedIndex];
       
       if (selectedItem?.isConfigEntry && selectedItem.configEntry) {
-        // Check if this is a JSON object/array that can be drilled into
-        const entry = selectedItem.configEntry;
-        if (entry.rawValue && typeof entry.rawValue === 'object') {
-          // Create a column for the JSON structure
-          const jsonItems: TreeNode[] = [];
-          
-          if (Array.isArray(entry.rawValue)) {
-            // Handle array
-            entry.rawValue.forEach((item, index) => {
-              const itemValue = typeof item === 'object' ? JSON.stringify(item) : String(item);
-              jsonItems.push({
-                name: `[${index}]: ${itemValue.length > 50 ? itemValue.substring(0, 47) + '...' : itemValue}`,
-                path: `${entry.key}[${index}]`,
-                isFile: false,
-                children: [],
-                isConfigEntry: true,
-                configEntry: {
-                  key: `${entry.key}[${index}]`,
-                  value: itemValue,
-                  file: entry.file,
-                  rawValue: item
-                }
-              });
-            });
-          } else {
-            // Handle object
-            Object.entries(entry.rawValue).forEach(([key, value]) => {
-              const itemValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-              jsonItems.push({
-                name: `${key}: ${itemValue.length > 50 ? itemValue.substring(0, 47) + '...' : itemValue}`,
-                path: `${entry.key}.${key}`,
-                isFile: false,
-                children: [],
-                isConfigEntry: true,
-                configEntry: {
-                  key: `${entry.key}.${key}`,
-                  value: itemValue,
-                  file: entry.file,
-                  rawValue: value
-                }
-              });
-            });
-          }
-          
-          if (jsonItems.length > 0) {
-            const jsonColumn: Column = {
-              items: jsonItems,
-              selectedIndex: 0,
-              title: `JSON: ${entry.key}`
-            };
-            
-            const newColumns = [...columns];
-            newColumns.splice(activeColumnIndex + 1);
-            newColumns.push(jsonColumn);
-            setColumns(newColumns);
-            setActiveColumnIndex(activeColumnIndex + 1);
-          } else {
-            // Empty object/array - show action menu instead
-            const dynamicActionOptions = [
-              'Search',
-              'Copy key',
-              'Copy value', 
-              'Copy key=value',
-              'Copy as JSON',
-              'Cancel'
-            ];
-            
-            const actionColumn: Column = {
-              items: dynamicActionOptions.map((option, index) => ({
-                name: option,
-                path: `action:${index}`,
-                isFile: false,
-                children: [],
-                isConfigEntry: false
-              })),
-              selectedIndex: 0,
-              title: `Actions: ${selectedItem.configEntry.key}`
-            };
-            
-            const newColumns = [...columns];
-            newColumns.splice(activeColumnIndex + 1);
-            newColumns.push(actionColumn);
-            setColumns(newColumns);
-            setActiveColumnIndex(activeColumnIndex + 1);
-            
-            setActionMenu({
-              isOpen: true,
-              entry: selectedItem.configEntry,
-              selectedActionIndex: 0,
-              columnIndex: activeColumnIndex + 1
-            });
-          }
-        } else {
-          // Not a nested value, show action menu
-          const dynamicActionOptions = [
-            'Search',
-            'Copy key',
-            'Copy value', 
-            'Copy key=value',
-            'Copy as JSON',
-            'Cancel'
-          ];
-          
-          const actionColumn: Column = {
-            items: dynamicActionOptions.map((option, index) => ({
-              name: option,
-              path: `action:${index}`,
-              isFile: false,
-              children: [],
-              isConfigEntry: false
-            })),
-            selectedIndex: 0,
-            title: `Actions: ${selectedItem.configEntry.key}`
-          };
-          
-          const newColumns = [...columns];
-          newColumns.splice(activeColumnIndex + 1);
-          newColumns.push(actionColumn);
-          setColumns(newColumns);
-          setActiveColumnIndex(activeColumnIndex + 1);
-          
-          setActionMenu({
-            isOpen: true,
-            entry: selectedItem.configEntry,
-            selectedActionIndex: 0,
-            columnIndex: activeColumnIndex + 1
-          });
-        }
-      } else if (currentColumn.title.startsWith('Actions:') && actionMenu.entry) {
-        // Handle right arrow on action items
+        // Show action menu for config entries
+        const dynamicActionOptions = [
+          'Search',
+          'Copy key',
+          'Copy value', 
+          'Copy key=value',
+          'Copy as JSON',
+          'Cancel'
+        ];
+        
+        const actionColumn: Column = {
+          items: dynamicActionOptions.map((option, index) => ({
+            name: option,
+            path: `action:${index}`,
+            isFile: false,
+            children: [],
+            isConfigEntry: false
+          })),
+          selectedIndex: 0,
+          title: `Actions: ${selectedItem.configEntry.key}`,
+          scrollOffset: 0
+        };
+        
+        const newColumns = [...columns];
+        newColumns.splice(activeColumnIndex + 1);
+        newColumns.push(actionColumn);
+        setColumns(newColumns);
+        setActiveColumnIndex(activeColumnIndex + 1);
+        
+        setActionMenu({
+          isOpen: true,
+          entry: selectedItem.configEntry,
+          selectedActionIndex: 0,
+          columnIndex: activeColumnIndex + 1
+        });
+      } else if (currentColumn.title.startsWith('Actions:') && actionMenu.entry) {        // Handle right arrow on action items
         const actionIndex = currentColumn.selectedIndex;
         if (actionIndex === 0) { // "Find similar values" is now at index 0
           handleFindSimilarValues(actionMenu.entry);
         }
         // For other actions, do nothing on right arrow (they require Enter)
-      } else if (currentColumn.title.startsWith('JSON:')) {
-        // Handle drilling into nested JSON from a JSON column
-        const selectedItem = currentColumn.items[currentColumn.selectedIndex];
-        if (selectedItem?.configEntry?.rawValue && typeof selectedItem.configEntry.rawValue === 'object') {
-          // Recursively drill into nested JSON
-          const entry = selectedItem.configEntry;
-          const jsonItems: TreeNode[] = [];
-          
-          if (Array.isArray(entry.rawValue)) {
-            entry.rawValue.forEach((item, index) => {
-              const itemValue = typeof item === 'object' ? JSON.stringify(item) : String(item);
-              jsonItems.push({
-                name: `[${index}]: ${itemValue.length > 50 ? itemValue.substring(0, 47) + '...' : itemValue}`,
-                path: `${entry.key}[${index}]`,
-                isFile: false,
-                children: [],
-                isConfigEntry: true,
-                configEntry: {
-                  key: `${entry.key}[${index}]`,
-                  value: itemValue,
-                  file: entry.file,
-                  rawValue: item
-                }
-              });
-            });
-          } else {
-            Object.entries(entry.rawValue).forEach(([key, value]) => {
-              const itemValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-              jsonItems.push({
-                name: `${key}: ${itemValue.length > 50 ? itemValue.substring(0, 47) + '...' : itemValue}`,
-                path: `${entry.key}.${key}`,
-                isFile: false,
-                children: [],
-                isConfigEntry: true,
-                configEntry: {
-                  key: `${entry.key}.${key}`,
-                  value: itemValue,
-                  file: entry.file,
-                  rawValue: value
-                }
-              });
-            });
-          }
-          
-          if (jsonItems.length > 0) {
-            const jsonColumn: Column = {
-              items: jsonItems,
-              selectedIndex: 0,
-              title: `JSON: ${entry.key}`
-            };
-            
-            const newColumns = [...columns];
-            newColumns.splice(activeColumnIndex + 1);
-            newColumns.push(jsonColumn);
-            setColumns(newColumns);
-            setActiveColumnIndex(activeColumnIndex + 1);
-          }
-        }
       } else if (selectedItem && selectedItem.children && Array.isArray(selectedItem.children) && selectedItem.children.length > 0) {
         // Navigate into folders
         navigateToItem(activeColumnIndex, currentColumn.selectedIndex);
@@ -758,7 +651,8 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
             isConfigEntry: false
           })),
           selectedIndex: 0,
-          title: `Actions: ${selectedItem.configEntry.key}`
+          title: `Actions: ${selectedItem.configEntry.key}`,
+          scrollOffset: 0
         };
         
         const newColumns = [...columns];
@@ -809,7 +703,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         <Text bold color="blue">📂 Config File Explorer - Miller Columns</Text>
       </Box>
       <Box marginBottom={1}>
-        <Text dimColor>↑↓/jk: Navigate | ←→/hl: Switch columns/Drill into JSON | Enter: Actions | q/Esc: Exit</Text>
+        <Text dimColor>↑↓/jk: Navigate | ←→/hl: Switch columns | Enter: Actions | q/Esc: Exit</Text>
       </Box>
       
       {/* Breadcrumb when columns are hidden */}
@@ -915,56 +809,65 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
               
               {/* Column items */}
               <Box flexDirection="column">
-                {column.items.map((item, itemIndex) => {
-                  const isSelected = itemIndex === column.selectedIndex && columnIndex === activeColumnIndex;
-                  const isHighlighted = itemIndex === column.selectedIndex && columnIndex <= activeColumnIndex;
-                  
-                  let icon: string;
-                  let suffix = '';
-                  if (item.isConfigEntry) {
-                    icon = '🔑';
-                    // Check if this is a nested JSON value that can be drilled into
-                    if (item.configEntry?.rawValue && typeof item.configEntry.rawValue === 'object') {
-                      const isArray = Array.isArray(item.configEntry.rawValue);
-                      const length = isArray ? item.configEntry.rawValue.length : Object.keys(item.configEntry.rawValue).length;
-                      if (length > 0) {
-                        suffix = isArray ? ` [${length}]` : ` {${length}}`;
-                      }
-                    }
-                  } else if (item.isFile) {
-                    icon = getFileIcon(item.configFile?.type || 'unknown');
-                  } else if (column.title.startsWith('Actions:')) {
-                    // No icon for action items
-                    icon = '';
-                  } else if (column.title.startsWith('JSON:')) {
-                    // Check if JSON items can be drilled into further
-                    icon = '🔑';
-                    if (item.configEntry?.rawValue && typeof item.configEntry.rawValue === 'object') {
-                      const isArray = Array.isArray(item.configEntry.rawValue);
-                      const length = isArray ? item.configEntry.rawValue.length : Object.keys(item.configEntry.rawValue).length;
-                      if (length > 0) {
-                        suffix = isArray ? ` [${length}]` : ` {${length}}`;
-                      }
-                    }
-                  } else {
-                    icon = '📁';
-                  }
-                  
-                  const displayName = item.name.length > maxTextLength ? item.name.substring(0, truncateLength) + '...' : item.name;
+                {(() => {
+                  const maxVisible = getMaxVisibleItems();
+                  const scrollOffset = column.scrollOffset || 0;
+                  const visibleItems = column.items.slice(scrollOffset, scrollOffset + maxVisible);
+                  const hasScrollUp = scrollOffset > 0;
+                  const hasScrollDown = scrollOffset + maxVisible < column.items.length;
                   
                   return (
-                    <Box key={itemIndex}>
-                      <Text 
-                        color={isSelected ? 'black' : (isHighlighted ? 'white' : undefined)}
-                        backgroundColor={isSelected ? 'white' : (isHighlighted ? 'gray' : undefined)}
-                        bold={isHighlighted}
-                      >
-                        {isSelected ? '❯ ' : (isHighlighted ? '• ' : '  ')}
-                        {icon && `${icon} `}{displayName}{suffix && <Text dimColor>{suffix}</Text>}
-                      </Text>
-                    </Box>
+                    <>
+                      {/* Scroll indicator at top */}
+                      {hasScrollUp && (
+                        <Box>
+                          <Text dimColor>  ↑ {scrollOffset} more...</Text>
+                        </Box>
+                      )}
+                      
+                      {/* Visible items */}
+                      {visibleItems.map((item, visibleIndex) => {
+                        const itemIndex = scrollOffset + visibleIndex;
+                        const isSelected = itemIndex === column.selectedIndex && columnIndex === activeColumnIndex;
+                        const isHighlighted = itemIndex === column.selectedIndex && columnIndex <= activeColumnIndex;
+                        
+                        let icon: string;
+                        if (item.isConfigEntry) {
+                          icon = '🔑';
+                        } else if (item.isFile) {
+                          icon = getFileIcon(item.configFile?.type || 'unknown');
+                        } else if (column.title.startsWith('Actions:')) {
+                          // No icon for action items
+                          icon = '';
+                        } else {
+                          icon = '📁';
+                        }
+                        
+                        const displayName = item.name.length > maxTextLength ? item.name.substring(0, truncateLength) + '...' : item.name;
+                        
+                        return (
+                          <Box key={itemIndex}>
+                            <Text 
+                              color={isSelected ? 'black' : (isHighlighted ? 'white' : undefined)}
+                              backgroundColor={isSelected ? 'white' : (isHighlighted ? 'gray' : undefined)}
+                              bold={isHighlighted}
+                            >
+                              {isSelected ? '❯ ' : (isHighlighted ? '• ' : '  ')}
+                              {icon && `${icon} `}{displayName}
+                            </Text>
+                          </Box>
+                        );
+                      })}
+                      
+                      {/* Scroll indicator at bottom */}
+                      {hasScrollDown && (
+                        <Box>
+                          <Text dimColor>  ↓ {column.items.length - scrollOffset - maxVisible} more...</Text>
+                        </Box>
+                      )}
+                    </>
                   );
-                })}
+                })()}
               </Box>
             </Box>
             );
