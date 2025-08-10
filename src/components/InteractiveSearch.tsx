@@ -95,6 +95,7 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
 
     return (
       <Box flexDirection="column">
+        <Box height={1}>{/* Blank line at top */}</Box>
         <Box marginBottom={1}>
           <Box flexDirection="column">
             <Box>

@@ -46,6 +46,7 @@ class ConfigExplorer {
   }
 
   async runInteractive(ignorePatterns: string[] = []): Promise<void> {
+    console.log(''); // Blank line before title
     console.log('🔍 ConfiGREP - Interactive Config File Explorer\n');
     console.log('Scanning for config files recursively...');
     this.configFiles = await this.findConfigFiles(this.rootDirectory, 5, ignorePatterns);
@@ -68,8 +69,8 @@ class ConfigExplorer {
           }
         ]);
 
-        // Clear the initial menu (6 lines)
-        process.stdout.write('\x1b[6A');  // Move up 6 lines
+        // Clear the initial menu (7 lines including the blank line we added)
+        process.stdout.write('\x1b[7A');  // Move up 7 lines
         process.stdout.write('\x1b[0J');   // Clear from cursor to end of screen
 
         switch (action) {

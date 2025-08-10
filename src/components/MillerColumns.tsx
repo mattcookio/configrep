@@ -914,6 +914,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
 
   return (
     <Box flexDirection="column">
+      <Box height={1}>{/* Blank line at top */}</Box>
       <Box marginBottom={1}>
         {filterMode ? (
           <Box flexDirection="column">
