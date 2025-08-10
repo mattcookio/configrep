@@ -68,6 +68,11 @@ class ConfigExplorer {
           }
         ]);
 
+        // Clear the inquirer prompt output before showing interactive mode
+        // Move cursor up past the menu (question + 3 choices) and clear
+        process.stdout.write('\x1b[4A');  // Move up 4 lines
+        process.stdout.write('\x1b[0J');   // Clear from cursor to end of screen
+
         switch (action) {
           case 'Browse':
             await this.browseInteractiveTree();
@@ -95,9 +100,6 @@ class ConfigExplorer {
   }
 
   private async browseInteractiveTree(): Promise<void> {
-    // Clear the console to remove the menu
-    console.clear();
-    
     const tree = await buildFileTree(this.configFiles, this.rootDirectory);
     
     // Parse config files if not already parsed
@@ -127,9 +129,6 @@ class ConfigExplorer {
   }
 
   private async interactiveSearch(): Promise<void> {
-    // Clear the console to remove the menu
-    console.clear();
-    
     if (this.parsedConfigs.length === 0) {
       for (const file of this.configFiles) {
         const parsed = await parseConfigFile(file);
