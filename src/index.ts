@@ -68,11 +68,7 @@ class ConfigExplorer {
           }
         ]);
 
-        // Clear all output from our tool including title
-        // Lines to clear may vary, but typically:
-        // - Menu question + choices
-        // - Some of the previous output
-        // Using 6 lines to clear menu and messages above
+        // Clear the initial menu (6 lines)
         process.stdout.write('\x1b[6A');  // Move up 6 lines
         process.stdout.write('\x1b[0J');   // Clear from cursor to end of screen
 

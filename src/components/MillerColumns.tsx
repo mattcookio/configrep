@@ -904,10 +904,10 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         }
       }
     } else if (key.escape) {
-      // Escape always exits immediately
+      // Escape exits immediately
       process.exit(0);
     } else if (input === 'q') {
-      // 'q' always exits immediately
+      // 'q' exits immediately
       process.exit(0);
     }
   });
