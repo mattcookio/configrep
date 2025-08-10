@@ -574,17 +574,98 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
           const newFilters = [...prev];
           if (newFilters[activeColumnIndex]) {
             newFilters[activeColumnIndex] = newFilters[activeColumnIndex].slice(0, -1);
+            
+            // Auto-select first matching item after backspace
+            const newFilter = newFilters[activeColumnIndex];
+            const filteredItems = newFilter
+              ? currentColumn.items.filter(item => 
+                  item.name.toLowerCase().includes(newFilter.toLowerCase())
+                )
+              : currentColumn.items;
+            
+            if (filteredItems.length > 0) {
+              const currentItem = currentColumn.items[currentColumn.selectedIndex];
+              const isCurrentVisible = currentItem && filteredItems.includes(currentItem);
+              
+              if (!isCurrentVisible) {
+                // Current selection is filtered out, select first filtered item
+                const firstFilteredItem = filteredItems[0];
+                const newIndex = currentColumn.items.indexOf(firstFilteredItem);
+                if (newIndex !== -1) {
+                  const newColumns = [...columns];
+                  newColumns[activeColumnIndex] = { 
+                    ...currentColumn, 
+                    selectedIndex: newIndex,
+                    scrollOffset: 0 
+                  };
+                  setColumns(newColumns);
+                }
+              }
+            }
           }
           return newFilters;
         });
       } else if (key.return) {
-        // Exit filter mode
+        // Exit filter mode and ensure something is selected
         setFilterMode(false);
+        
+        // Check if current selection is visible in filtered items
+        const columnFilter = filterText[activeColumnIndex] || '';
+        if (columnFilter) {
+          const filteredItems = currentColumn.items.filter(item => 
+            item.name.toLowerCase().includes(columnFilter.toLowerCase())
+          );
+          
+          if (filteredItems.length > 0) {
+            const currentItem = currentColumn.items[currentColumn.selectedIndex];
+            const isCurrentVisible = currentItem && filteredItems.includes(currentItem);
+            
+            if (!isCurrentVisible) {
+              // Current selection is filtered out, select first filtered item
+              const firstFilteredItem = filteredItems[0];
+              if (!firstFilteredItem) return;
+              const newIndex = currentColumn.items.indexOf(firstFilteredItem);
+              if (newIndex !== -1) {
+                const newColumns = [...columns];
+                newColumns[activeColumnIndex] = { 
+                  ...currentColumn, 
+                  selectedIndex: newIndex,
+                  scrollOffset: 0 
+                };
+                setColumns(newColumns);
+              }
+            }
+          }
+        }
       } else if (input && input.length === 1 && !key.ctrl && !key.meta) {
         // Add character to filter for current column
         setFilterText(prev => {
           const newFilters = [...prev];
           newFilters[activeColumnIndex] = (newFilters[activeColumnIndex] || '') + input;
+          
+          // Auto-select first matching item as user types
+          const newFilter = newFilters[activeColumnIndex];
+          if (newFilter) {
+            const filteredItems = currentColumn.items.filter(item => 
+              item.name.toLowerCase().includes(newFilter.toLowerCase())
+            );
+            
+            if (filteredItems.length > 0) {
+              const firstFilteredItem = filteredItems[0];
+              if (!firstFilteredItem) return;
+              const newIndex = currentColumn.items.indexOf(firstFilteredItem);
+              if (newIndex !== -1 && newIndex !== currentColumn.selectedIndex) {
+                const newColumns = [...columns];
+                newColumns[activeColumnIndex] = { 
+                  ...currentColumn, 
+                  selectedIndex: newIndex,
+                  scrollOffset: 0 
+                };
+                setColumns(newColumns);
+              }
+            }
+          }
+          
           return newFilters;
         });
       }
