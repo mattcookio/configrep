@@ -73,9 +73,9 @@ class ConfigExplorer {
         // - Title + blank line (2 lines)
         // - "Scanning..." line (1 line)
         // - "Found X files" + blank line (2 lines)
-        // - Menu question + 3 choices (4 lines)
-        // Total: 9 lines
-        process.stdout.write('\x1b[9A');  // Move up 9 lines
+        // - Menu question + 3 choices (3 lines, choices are on same line)
+        // Total: 8 lines
+        process.stdout.write('\x1b[8A');  // Move up 8 lines
         process.stdout.write('\x1b[0J');   // Clear from cursor to end of screen
 
         switch (action) {
