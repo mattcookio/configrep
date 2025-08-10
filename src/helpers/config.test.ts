@@ -1,6 +1,9 @@
-import { test, expect, describe } from 'bun:test';
-import { mergeConfigWithOptions } from './config';
+import { test, expect, describe, beforeAll, afterAll } from 'bun:test';
+import { mergeConfigWithOptions, createExampleConfig, loadConfigFile } from './config';
 import type { ConfiGREPConfig } from '../types.ts';
+import { join } from 'path';
+import { rm, readFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 
 describe('mergeConfigWithOptions', () => {
   test('merges config and options', () => {
@@ -63,5 +66,47 @@ describe('mergeConfigWithOptions', () => {
     const merged = mergeConfigWithOptions(config, options, true); // ignoreExplicitlyProvided = true
     // When user explicitly provides empty ignore array, it means "don't ignore anything"
     expect(merged.ignore).toEqual([]);
+  });
+});
+
+describe('createExampleConfig', () => {
+  const testDir = join(import.meta.dir, '../../tests/tmp-config-test');
+  
+  beforeAll(async () => {
+    if (!existsSync(testDir)) {
+      await mkdir(testDir, { recursive: true });
+    }
+  });
+  
+  afterAll(async () => {
+    if (existsSync(testDir)) {
+      await rm(testDir, { recursive: true });
+    }
+  });
+  
+  test('creates example config file', async () => {
+    await createExampleConfig(testDir);
+    const configPath = join(testDir, 'configrep.json');
+    expect(existsSync(configPath)).toBe(true);
+    
+    const content = await readFile(configPath, 'utf-8');
+    const config = JSON.parse(content);
+    expect(config.directory).toBe('.');
+    expect(config.depth).toBe(5);
+    expect(config.defaultCommand).toBe('interactive');
+    expect(config.ignore).toContain('node_modules');
+  });
+  
+  test('throws error if config already exists', async () => {
+    // Config already created in previous test
+    expect(createExampleConfig(testDir)).rejects.toThrow('configrep.json already exists');
+  });
+});
+
+describe('loadConfigFile', () => {
+  test('loads config from current directory', async () => {
+    const config = await loadConfigFile();
+    // Should return empty object if no config file exists
+    expect(config).toBeDefined();
   });
 });

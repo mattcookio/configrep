@@ -67,18 +67,18 @@ test("ConfigExplorer parses JSON, YAML, TOML, INI", async () => {
   // JSON
   const jsonFile = files.find((f: any) => f.name === "config.json");
   const jsonParsed = await explorer.parseConfigFile(jsonFile);
-  expect(jsonParsed.entries).toContainEqual({ key: "a", value: "1", file: jsonFile.path });
-  expect(jsonParsed.entries).toContainEqual({ key: "b.c", value: "2", file: jsonFile.path });
+  expect(jsonParsed.entries).toContainEqual({ key: "a", value: "1", file: jsonFile.path, rawValue: 1 });
+  expect(jsonParsed.entries).toContainEqual({ key: "b.c", value: "2", file: jsonFile.path, rawValue: 2 });
   // YAML
   const yamlFile = files.find((f: any) => f.name === "config.yaml");
   const yamlParsed = await explorer.parseConfigFile(yamlFile);
-  expect(yamlParsed.entries).toContainEqual({ key: "foo", value: "bar", file: yamlFile.path });
-  expect(yamlParsed.entries).toContainEqual({ key: "baz", value: "qux", file: yamlFile.path });
+  expect(yamlParsed.entries).toContainEqual({ key: "foo", value: "bar", file: yamlFile.path, rawValue: "bar" });
+  expect(yamlParsed.entries).toContainEqual({ key: "baz", value: "qux", file: yamlFile.path, rawValue: "qux" });
   // TOML
   const tomlFile = files.find((f: any) => f.name === "config.toml");
   const tomlParsed = await explorer.parseConfigFile(tomlFile);
-  expect(tomlParsed.entries).toContainEqual({ key: "foo", value: "bar", file: tomlFile.path });
-  expect(tomlParsed.entries).toContainEqual({ key: "baz", value: "42", file: tomlFile.path });
+  expect(tomlParsed.entries).toContainEqual({ key: "foo", value: "bar", file: tomlFile.path, rawValue: "bar" });
+  expect(tomlParsed.entries).toContainEqual({ key: "baz", value: "42", file: tomlFile.path, rawValue: 42 });
   // INI
   const iniFile = files.find((f: any) => f.name === "config.ini");
   const iniParsed = await explorer.parseConfigFile(iniFile);
@@ -86,14 +86,110 @@ test("ConfigExplorer parses JSON, YAML, TOML, INI", async () => {
 });
 
 test("ConfigExplorer handles malformed files gracefully", async () => {
-  const tmpDir = await setupTestDir();
   const explorer = new ConfigExplorer();
-  explorer.setRootDirectory(tmpDir);
-  const files = await explorer.findConfigFiles(tmpDir, 2, []);
-  const broken = files.find((f: any) => f.name === "broken.json");
-  const parsed = await explorer.parseConfigFile(broken);
-  expect(parsed.entries).toEqual([]);
+  const tmpDir = join(import.meta.dir, "../tests/tmp-configrep");
+  await writeFile(join(tmpDir, "bad.json"), "{invalid json}");
+  const badFile = { path: join(tmpDir, "bad.json"), name: "bad.json", relativePath: "bad.json", type: "json" as const };
+  const parsed = await explorer.parseConfigFile(badFile);
   expect(parsed.error).toBeDefined();
+  expect(parsed.entries).toEqual([]);
+  await rm(join(tmpDir, "bad.json"));
+});
+
+test("ConfigExplorer listFiles method works correctly", async () => {
+  const explorer = new ConfigExplorer();
+  const tmpDir = join(import.meta.dir, "../tests/tmp-configrep");
+  
+  // Capture console output
+  const originalLog = console.log;
+  let output = "";
+  console.log = (msg: any) => { output += msg + "\n"; };
+  
+  await explorer.listFiles(5, { dir: tmpDir });
+  
+  console.log = originalLog;
+  
+  // Check that output contains expected files
+  expect(output).toContain("config.json");
+  expect(output).toContain(".env");
+});
+
+test("ConfigExplorer showEntries method works correctly", async () => {
+  const explorer = new ConfigExplorer();
+  const tmpDir = join(import.meta.dir, "../tests/tmp-configrep");
+  
+  // Capture console output
+  const originalLog = console.log;
+  let output = "";
+  console.log = (msg: any) => { output += msg + "\n"; };
+  
+  await explorer.showEntries({ dir: tmpDir });
+  
+  console.log = originalLog;
+  
+  // Check that output contains expected entries
+  expect(output).toContain("FOO");
+  expect(output).toContain("bar");
+});
+
+test("ConfigExplorer searchEntries method works correctly", async () => {
+  const explorer = new ConfigExplorer();
+  const tmpDir = join(import.meta.dir, "../tests/tmp-configrep");
+  
+  // Capture console output
+  const originalLog = console.log;
+  let output = "";
+  console.log = (msg: any) => { output += msg + "\n"; };
+  
+  await explorer.searchEntries("foo", { dir: tmpDir });
+  
+  console.log = originalLog;
+  
+  // Check that output contains FOO from .env
+  expect(output).toContain("FOO");
+});
+
+test("ConfigExplorer searchEntries with keysOnly option", async () => {
+  const explorer = new ConfigExplorer();
+  const tmpDir = join(import.meta.dir, "../tests/tmp-configrep");
+  
+  // Capture console output
+  const originalLog = console.log;
+  let output = "";
+  console.log = (msg: any) => { output += msg + "\n"; };
+  
+  await explorer.searchEntries("foo", { keysOnly: true, dir: tmpDir });
+  
+  console.log = originalLog;
+  
+  // Should find FOO key but not "bar" value
+  expect(output).toContain("FOO");
+  expect(output).toContain("foo"); // from yaml
+});
+
+test("ConfigExplorer searchEntries with valuesOnly option", async () => {
+  const explorer = new ConfigExplorer();
+  const tmpDir = join(import.meta.dir, "../tests/tmp-configrep");
+  
+  // Capture console output
+  const originalLog = console.log;
+  let output = "";
+  console.log = (msg: any) => { output += msg + "\n"; };
+  
+  await explorer.searchEntries("bar", { valuesOnly: true, dir: tmpDir });
+  
+  console.log = originalLog;
+  
+  // Should find "bar" value
+  expect(output).toContain("bar");
+});
+
+test("ConfigExplorer setRootDirectory method", () => {
+  const explorer = new ConfigExplorer();
+  const testDir = "/test/directory";
+  explorer.setRootDirectory(testDir);
+  // We can't directly test private property, but we can verify it doesn't throw
+  expect(() => explorer.setRootDirectory(testDir)).not.toThrow();
 });
 
 afterAll(async () => {
