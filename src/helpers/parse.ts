@@ -150,10 +150,39 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
         const hasObjects = value.some(item => typeof item === 'object' && item !== null);
         
         if (hasObjects) {
+          // Add entry for the array itself with a preview
+          const preview = value.slice(0, 2).map((item, idx) => {
+            if (typeof item === 'object' && item !== null) {
+              const keys = Object.keys(item).slice(0, 2).join(', ');
+              return `[${idx}]: {${keys}...}`;
+            }
+            return `[${idx}]: ${JSON.stringify(item)}`;
+          }).join(', ');
+          const moreText = value.length > 2 ? `, ... +${value.length - 2} more` : '';
+          
+          entries.push({
+            key: fullKey,
+            value: `[${preview}${moreText}]`,
+            file: filePath,
+            rawValue: value
+          });
+          
           // Array of objects - flatten each object with array index
           value.forEach((item, index) => {
             const arrayKey = `${fullKey}[${index}]`;
             if (typeof item === 'object' && item !== null) {
+              // Add entry for each array item object with preview
+              const itemKeys = Object.keys(item);
+              const preview = itemKeys.slice(0, 3).map(k => `${k}: ${JSON.stringify(item[k])}`).join(', ');
+              const moreText = itemKeys.length > 3 ? `, ... +${itemKeys.length - 3} more` : '';
+              
+              entries.push({
+                key: arrayKey,
+                value: `{${preview}${moreText}}`,
+                file: filePath,
+                rawValue: item
+              });
+              
               // Recursively flatten the object in the array
               flattenObject(item, arrayKey, entries, filePath, skipChildren);
             } else {
@@ -176,7 +205,23 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
           });
         }
       } else {
-        // Regular object - always flatten into dot notation
+        // Regular object - add entry for the object itself with preview
+        const objKeys = Object.keys(value);
+        const preview = objKeys.slice(0, 3).map(k => {
+          const val = value[k as keyof typeof value];
+          const valStr = typeof val === 'object' ? '{...}' : JSON.stringify(val);
+          return `${k}: ${valStr}`;
+        }).join(', ');
+        const moreText = objKeys.length > 3 ? `, ... +${objKeys.length - 3} more` : '';
+        
+        entries.push({
+          key: fullKey,
+          value: `{${preview}${moreText}}`,
+          file: filePath,
+          rawValue: value
+        });
+        
+        // Always flatten into dot notation
         flattenObject(value, fullKey, entries, filePath, skipChildren);
       }
     } else {
