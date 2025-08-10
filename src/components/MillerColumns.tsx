@@ -586,9 +586,10 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
               const currentItem = currentColumn.items[currentColumn.selectedIndex];
               const isCurrentVisible = currentItem && filteredItems.includes(currentItem);
               
-              if (!isCurrentVisible) {
+              if (!isCurrentVisible && filteredItems.length > 0) {
                 // Current selection is filtered out, select first filtered item
                 const firstFilteredItem = filteredItems[0];
+                if (!firstFilteredItem) return newFilters;
                 const newIndex = currentColumn.items.indexOf(firstFilteredItem);
                 if (newIndex !== -1) {
                   const newColumns = [...columns];
@@ -644,14 +645,14 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
           
           // Auto-select first matching item as user types
           const newFilter = newFilters[activeColumnIndex];
-          if (newFilter) {
+          if (newFilter && currentColumn) {
             const filteredItems = currentColumn.items.filter(item => 
               item.name.toLowerCase().includes(newFilter.toLowerCase())
             );
             
             if (filteredItems.length > 0) {
               const firstFilteredItem = filteredItems[0];
-              if (!firstFilteredItem) return;
+              if (!firstFilteredItem) return newFilters;
               const newIndex = currentColumn.items.indexOf(firstFilteredItem);
               if (newIndex !== -1 && newIndex !== currentColumn.selectedIndex) {
                 const newColumns = [...columns];
@@ -911,36 +912,29 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     }
   });
 
-  const terminalWidth = stdout?.columns || 80;
-  const useCompactHeader = terminalWidth < 80;
-
   return (
     <Box flexDirection="column">
-      <Box marginBottom={1} flexWrap="wrap">
+      <Box marginBottom={1}>
         {filterMode ? (
-          <Box>
-            <Text bold color="blue">ConfiGREP</Text>
-            <Text dimColor> | Typing filter... | Esc: Cancel | Enter: Apply</Text>
-          </Box>
-        ) : (
-          useCompactHeader ? (
-            // Narrow terminal: split into two lines
-            <Box flexDirection="column">
-              <Box>
-                <Text bold color="blue">ConfiGREP</Text>
-                <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
-              </Box>
-              <Box>
-                <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
-              </Box>
-            </Box>
-          ) : (
-            // Wide terminal: single line
+          <Box flexDirection="column">
             <Box>
               <Text bold color="blue">ConfiGREP</Text>
-              <Text dimColor> | ↑↓: Nav | ←→: Columns | f: Filter | c: Clear | Enter: Actions | q: Exit</Text>
+              <Text dimColor> | Typing filter...</Text>
             </Box>
-          )
+            <Box>
+              <Text dimColor>Esc: Cancel | Enter: Apply</Text>
+            </Box>
+          </Box>
+        ) : (
+          <Box flexDirection="column">
+            <Box>
+              <Text bold color="blue">ConfiGREP</Text>
+              <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
+            </Box>
+            <Box>
+              <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
+            </Box>
+          </Box>
         )}
       </Box>
       
@@ -1091,7 +1085,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                       )}
                       
                       {/* Visible items */}
-                      {visibleItems.map((item, visibleIndex) => {
+                      {visibleItems.map((item) => {
                         // Get the actual index of this item in the original unfiltered list
                         const actualItemIndex = column.items.indexOf(item);
                         const isSelected = actualItemIndex === column.selectedIndex && columnIndex === activeColumnIndex;

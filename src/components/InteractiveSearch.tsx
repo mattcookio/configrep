@@ -96,10 +96,15 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
     return (
       <Box flexDirection="column">
         <Box marginBottom={1}>
-          <Text bold color="blue">🔍 Interactive Search - Config File Explorer</Text>
-        </Box>
-        <Box marginBottom={1}>
-          <Text dimColor>Type to filter | Enter: Browse results | Esc: Exit</Text>
+          <Box flexDirection="column">
+            <Box>
+              <Text bold color="blue">ConfiGREP</Text>
+              <Text dimColor> | Interactive Search</Text>
+            </Box>
+            <Box>
+              <Text dimColor>Type to filter | Enter: Browse results | Esc: Exit</Text>
+            </Box>
+          </Box>
         </Box>
         <Box marginBottom={1}>
           <Text>Search: <Text color="cyan">{searchTerm}</Text><Text color="gray">█</Text></Text>
