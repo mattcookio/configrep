@@ -1161,6 +1161,14 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                 displayValue = String(displayValue);
               }
               
+              // Truncate to fit terminal width
+              const terminalWidth = stdout?.columns || 80;
+              const keyLength = selectedItem.configEntry.key.length;
+              const maxValueLength = terminalWidth - keyLength - 5; // Account for " = " and some padding
+              if (displayValue.length > maxValueLength) {
+                displayValue = displayValue.substring(0, maxValueLength - 3) + '...';
+              }
+              
               return (
                 <Box flexDirection="column">
                   <Text dimColor>Full value:</Text>
@@ -1199,6 +1207,14 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                   
                   // Ensure key is also a string
                   const keyStr = String(foundItem.foundValue.key || '');
+                  
+                  // Truncate to fit terminal width
+                  const terminalWidth = stdout?.columns || 80;
+                  const keyLength = keyStr.length;
+                  const maxValueLength = terminalWidth - keyLength - 5; // Account for " = " and some padding
+                  if (displayValue.length > maxValueLength) {
+                    displayValue = displayValue.substring(0, maxValueLength - 3) + '...';
+                  }
                   
                   return (
                     <Box flexDirection="column">

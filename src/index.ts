@@ -69,13 +69,11 @@ class ConfigExplorer {
         ]);
 
         // Clear all output from our tool including title
-        // Lines to clear:
-        // - Title + blank line (2 lines)
-        // - "Scanning..." line (1 line)
-        // - "Found X files" + blank line (2 lines)
-        // - Menu question + 3 choices (3 lines, choices are on same line)
-        // Total: 8 lines
-        process.stdout.write('\x1b[8A');  // Move up 8 lines
+        // Lines to clear may vary, but typically:
+        // - Menu question + choices
+        // - Some of the previous output
+        // Using 6 lines to clear menu and messages above
+        process.stdout.write('\x1b[6A');  // Move up 6 lines
         process.stdout.write('\x1b[0J');   // Clear from cursor to end of screen
 
         switch (action) {
