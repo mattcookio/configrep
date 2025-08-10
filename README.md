@@ -1,98 +1,164 @@
 # ConfiGREP 🔍
 
-A CLI tool for exploring configuration files. Auto-discovers `.env`, `.json`, `.yaml`, `.toml`, `.ini` files and presents them in a clean tree structure with interactive browsing and search.
+**Find any config value in seconds.** A fast CLI tool that discovers and searches through all your configuration files (.env, .json, .yaml, .toml, .ini) with an intuitive Miller Columns interface.
 
-## Installation
+## Why ConfiGREP?
+
+Ever wondered where that API key is stored? Or which config file has the database URL? ConfiGREP instantly finds any configuration value across your entire project.
+
+## Quick Start
 
 ```bash
-# Run directly (no installation)
-npx configrep interactive
-bunx configrep list
-pnpm dlx configrep search "database"
+# Run without installation
+npx configrep
 
-# Install globally
+# Or install globally
 npm install -g configrep
-
-# After installation, use the 'cfg' command
-cfg interactive
+cfg  # Use the short 'cfg' command
 ```
 
-## Configuration
+## Core Features
 
-Create a `configrep.json` file to set defaults:
+- **Auto-discovery** - Finds all config files in your project automatically
+- **Miller Columns UI** - Navigate configs like macOS Finder
+- **Smart search** - Search by key, value, or both with regex support
+- **Cross-format** - Works with .env, JSON, YAML, TOML, and INI files
+- **Tree display** - View nested configs in hierarchical or flat format
 
+## Commands & Examples
+
+### Interactive Mode (Default)
 ```bash
-cfg init  # Creates config in current directory
+cfg                    # Launch interactive explorer
+cfg interactive        # Same as above
+cfg i                  # Shorthand
+
+# Navigate with arrow keys, filter with 'f', search with '/'
+# Press Enter on any value to copy or find similar keys
 ```
 
-```json
+### Search Configurations
+```bash
+# Find database connections
+cfg search "database"
+cfg search "postgres|mysql|mongo"
+
+# Find all API keys and tokens
+cfg search "key|token|secret|password"
+
+# Search only in keys (useful for finding specific settings)
+cfg search "timeout" --keys-only
+
+# Search only in values (useful for finding hardcoded IPs/URLs)
+cfg search "192.168" --values-only
+cfg search "localhost|127.0.0.1" --values-only
+
+# Find staging vs production values
+cfg search "staging|prod|development"
+```
+
+### List Config Files
+```bash
+# See all config files in your project
+cfg list
+cfg ls                 # Shorthand
+
+# Find configs in specific directories
+cfg list --dir ./src
+cfg list --dir ./config
+
+# Exclude test configs
+cfg list --ignore "*.test.*" "*.spec.*"
+```
+
+### Show Config Contents
+```bash
+# Display all configuration values
+cfg show
+cfg s                  # Shorthand
+
+# Show specific file
+cfg show --file .env
+cfg show --file package.json
+
+# Display as nested tree structure
+cfg show --tree
+cfg show --file tsconfig.json --tree
+
+# Show configs from specific directory
+cfg show --dir ./config
+```
+
+### Advanced Usage
+
+#### Create a config file for defaults
+```bash
+cfg init
+
+# Creates configrep.json:
 {
   "directory": ".",
-  "ignore": ["node_modules", "dist", ".git", "*.tmp"],
+  "ignore": ["node_modules", "dist", ".git"],
   "depth": 5,
   "defaultCommand": "interactive"
 }
 ```
 
-CLI flags override config file settings.
-
-## Usage
-
+#### Audit sensitive data
 ```bash
-# Interactive explorer (Miller Columns interface)
-cfg interactive
-cfg i  # shorthand
+# Find potentially exposed secrets
+cfg search "api_key|api_secret|private_key|access_token"
 
-# List all config files
-cfg list
-cfg ls  # shorthand
+# Check for hardcoded passwords
+cfg search "password" --values-only | grep -v "ENV\|env\|process"
 
-# Show all configuration entries
-cfg show
-cfg s  # shorthand
-
-# Search configuration entries
-cfg search "database"
-cfg search "API" --keys-only
-cfg search "localhost" --values-only
+# Find non-environment database URLs
+cfg search "mongodb://|postgres://|mysql://" --values-only
 ```
 
-### Interactive Mode Features
+#### Debug configuration issues
+```bash
+# Compare key names across files (finds typos/inconsistencies)
+cfg show | grep "AUTH" | sort | uniq
 
-- **Miller Columns Navigation**: Browse through directories and files in a hierarchical view
-- **Flat Dot Notation**: All nested values are displayed using dot notation (e.g., `database.host`, `servers[0].port`)
-- **Interactive Filtering**: Press `f` to filter items in current column, `c` to clear filter, `Esc` to cancel
-- **Automatic Scrolling**: Large files are paginated with scroll indicators showing hidden items
-- **Quick Actions**: Press `Enter` on any config value to access copy/search actions
-- **Array Handling**: Arrays of primitives are shown as single values, while arrays of objects are expanded with index notation
+# Find duplicate keys
+cfg show | cut -d'=' -f1 | sort | uniq -d
+
+# Check which configs are using environment variables
+cfg search "\$\{.*\}" --values-only
+```
+
+#### Migration and refactoring
+```bash
+# Find all timeout settings to standardize
+cfg search "timeout|ttl|expir" --keys-only
+
+# Locate all external service URLs
+cfg search "http://|https://" --values-only
+
+# Find all port configurations
+cfg search "port" --keys-only
+```
 
 ## Options
 
-- `--dir <path>` - Directory to search
-- `--ignore <pattern...>` - Glob patterns to ignore
-- `--depth <number>` - Maximum directory depth (default: 5)
-- `--keys-only` - Search keys only (search command)
-- `--values-only` - Search values only (search command)
+| Option | Description |
+|--------|-------------|
+| `--dir <path>` | Directory to search (default: current) |
+| `--ignore <patterns...>` | Glob patterns to ignore |
+| `--depth <number>` | Max directory depth (default: 5) |
+| `--tree` | Display nested structure (show/search) |
+| `--keys-only` | Search only in keys |
+| `--values-only` | Search only in values |
+| `--file <path>` | Target specific file |
+| `--all` | Show all matches, not just first |
 
-## Supported Formats
+## Tips
 
-ENV, JSON, YAML, TOML, INI files
-
-## Examples
-
-```bash
-# Find database configurations
-cfg search "database\|db\|sql" --keys-only
-
-# Audit API keys
-cfg search "key\|token\|secret"
-
-# Ignore build artifacts
-cfg list --ignore "node_modules" "dist" ".git"
-
-# Setup project config
-cfg init
-```
+- Use `cfg` in your project root for best results
+- Create `configrep.json` to save your preferred settings
+- Pipe output to other tools: `cfg search "api" | grep prod`
+- Use `--tree` flag for better visualization of nested configs
 
 ## License
 

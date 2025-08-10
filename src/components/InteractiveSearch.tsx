@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import MillerTree from './MillerTree';
+import MillerColumns from './MillerColumns';
 
 interface ConfigEntry {
   key: string;
@@ -128,7 +128,7 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
 
   // Navigation mode - show Miller Columns
   return (
-    <MillerTree 
+    <MillerColumns 
       key={`nav-${Date.now()}`}
       tree={filteredTree} 
       allConfigs={allConfigs}

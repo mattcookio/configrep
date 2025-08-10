@@ -6,7 +6,7 @@ import { resolve } from 'path';
 import React from 'react';
 import { render } from 'ink';
 
-import MillerTree from './components/MillerTree';
+import MillerColumns from './components/MillerColumns';
 import InteractiveSearch from './components/InteractiveSearch';
 
 // Import types
@@ -117,7 +117,7 @@ class ConfigExplorer {
     }
     
     render(
-      React.createElement(MillerTree, {
+      React.createElement(MillerColumns, {
         key: Date.now(),
         tree,
         allConfigs
