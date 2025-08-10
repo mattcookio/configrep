@@ -71,11 +71,9 @@ class ConfigExplorer {
         switch (action) {
           case 'Browse':
             await this.browseInteractiveTree();
-            console.log('\nGoodbye! 👋');
             return;
           case 'Search':
             await this.interactiveSearch();
-            console.log('\nGoodbye! 👋');
             return;
           case 'Exit':
             console.log('Goodbye! 👋');

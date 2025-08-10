@@ -65,7 +65,6 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
         setSearchTerm(prev => prev.slice(0, -1));
       } else if (key.escape) {
         // Exit immediately
-        console.log('\nGoodbye! 👋');
         process.exit(0);
       } else if (input && input.length === 1 && !key.ctrl && !key.meta) {
         // Add character to search term

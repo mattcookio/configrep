@@ -904,14 +904,15 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
       }
     } else if (key.escape) {
       // Escape always exits immediately
-      console.log('\nGoodbye! 👋');
       process.exit(0);
     } else if (input === 'q') {
       // 'q' always exits immediately
-      console.log('\nGoodbye! 👋');
       process.exit(0);
     }
   });
+
+  const terminalWidth = stdout?.columns || 80;
+  const useCompactHeader = terminalWidth < 80;
 
   return (
     <Box flexDirection="column">
@@ -922,15 +923,24 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
             <Text dimColor> | Typing filter... | Esc: Cancel | Enter: Apply</Text>
           </Box>
         ) : (
-          <Box flexDirection="column">
+          useCompactHeader ? (
+            // Narrow terminal: split into two lines
+            <Box flexDirection="column">
+              <Box>
+                <Text bold color="blue">ConfiGREP</Text>
+                <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
+              </Box>
+              <Box>
+                <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
+              </Box>
+            </Box>
+          ) : (
+            // Wide terminal: single line
             <Box>
               <Text bold color="blue">ConfiGREP</Text>
-              <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
+              <Text dimColor> | ↑↓: Nav | ←→: Columns | f: Filter | c: Clear | Enter: Actions | q: Exit</Text>
             </Box>
-            <Box>
-              <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
-            </Box>
-          </Box>
+          )
         )}
       </Box>
       
