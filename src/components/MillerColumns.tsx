@@ -1093,7 +1093,22 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                         
                         let icon: string;
                         if (item.isConfigEntry) {
-                          icon = '🔑';
+                          // Check if the value is an object or array based on the display text
+                          const valueMatch = item.name.match(/= (.+)$/);
+                          if (valueMatch && valueMatch[1]) {
+                            const value = valueMatch[1];
+                            if (value.startsWith('{ ')) {
+                              icon = '{}';  // Object (even if truncated)
+                            } else if (value.startsWith('[ ')) {
+                              icon = '[]';  // Array (even if truncated)
+                            } else if (value.startsWith('[') && value.endsWith(']')) {
+                              icon = '[]';  // Array of primitives (JSON stringified)
+                            } else {
+                              icon = '•';  // Primitive value (bullet point)
+                            }
+                          } else {
+                            icon = '•';
+                          }
                         } else if (item.isFile) {
                           icon = getFileIcon(item.configFile?.type || 'unknown');
                         } else if (column.title.startsWith('Actions:')) {

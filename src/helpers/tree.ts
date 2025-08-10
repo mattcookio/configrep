@@ -249,7 +249,22 @@ export function printTree(node: TreeNode, prefix = '', isLast = true): void {
   const connector = isLast ? '└── ' : '├── ';
   let icon: string;
   if (node.isConfigEntry) {
-    icon = '🔑';
+    // Check if the value is an object or array based on the display text
+    const valueMatch = node.name.match(/= (.+)$/);
+    if (valueMatch && valueMatch[1]) {
+      const value = valueMatch[1];
+      if (value.startsWith('{ ')) {
+        icon = '{}';  // Object (even if truncated)
+      } else if (value.startsWith('[ ')) {
+        icon = '[]';  // Array (even if truncated)
+      } else if (value.startsWith('[') && value.endsWith(']')) {
+        icon = '[]';  // Array of primitives (JSON stringified)
+      } else {
+        icon = '•';  // Primitive value (bullet point)
+      }
+    } else {
+      icon = '•';
+    }
   } else if (node.isFile) {
     icon = '📋';
   } else if (node.path && node.path.includes('#')) {
