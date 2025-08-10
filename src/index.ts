@@ -185,7 +185,7 @@ class ConfigExplorer {
     console.log('');
   }
 
-  async showEntries(options: { file?: string; glob?: string[]; all?: boolean; dir?: string; ignore?: string[] }): Promise<void> {
+  async showEntries(options: { file?: string; glob?: string[]; all?: boolean; dir?: string; ignore?: string[]; tree?: boolean }): Promise<void> {
     let matchingFiles: ConfigFile[] = [];
     
     if (options.file || options.glob) {
@@ -214,13 +214,13 @@ class ConfigExplorer {
       matchingFiles = await findConfigFiles(directory, directory, [], 5, options.ignore || []);
     }
 
-    const tree = await buildFileTree(matchingFiles, this.rootDirectory);
+    const tree = await buildFileTree(matchingFiles, this.rootDirectory, options.tree || false); // Use tree flag
     console.log('│');
     printTree(tree, '');
     console.log('');
   }
 
-  async searchEntries(searchTerm: string, options: { keysOnly?: boolean; valuesOnly?: boolean; dir?: string; ignore?: string[] }): Promise<void> {
+  async searchEntries(searchTerm: string, options: { keysOnly?: boolean; valuesOnly?: boolean; dir?: string; ignore?: string[]; tree?: boolean }): Promise<void> {
     const directory = options.dir || process.cwd();
     this.configFiles = await findConfigFiles(directory, directory, [], 5, options.ignore || []);
     
@@ -244,7 +244,7 @@ class ConfigExplorer {
 
     if (matches.length === 0) return;
 
-    const searchTree = await buildFilteredTree(matches, this.rootDirectory);
+    const searchTree = await buildFilteredTree(matches, this.rootDirectory, undefined, options.tree || false); // Use tree flag
     console.log('│');
     printTree(searchTree, '');
     console.log('');
@@ -315,6 +315,7 @@ program
   .option('-f, --file <path>', 'Show entries from specific file only')
   .option('-g, --glob <pattern...>', 'Show entries from files matching glob patterns (e.g., "*.env" "**/.json")')
   .option('-a, --all', 'Show all matching files instead of just the first one')
+  .option('--tree', 'Display entries in nested tree format instead of flat dot notation')
   .option('--dir <path>', 'Directory to search from', process.cwd())
   .option('--ignore <pattern...>', 'Glob patterns to ignore (e.g., "node_modules" "*.tmp")', [])
   .action(async (options) => {
@@ -332,6 +333,7 @@ program
   .description('Search for config entries by key or value')
   .option('-k, --keys-only', 'Search keys only')
   .option('-v, --values-only', 'Search values only')
+  .option('--tree', 'Display entries in nested tree format instead of flat dot notation')
   .option('--dir <path>', 'Directory to search from', process.cwd())
   .option('--ignore <pattern...>', 'Glob patterns to ignore (e.g., "node_modules" "*.tmp")', [])
   .action(async (term, options) => {
