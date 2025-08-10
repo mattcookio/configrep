@@ -52,15 +52,10 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@inkjs/ui": "^2.0.0",
     "@types/react": "^19.1.9",
-    "cli-tree": "^0.0.1",
-    "clipboardy": "^4.0.0",
     "commander": "^14.0.0",
     "ink": "^6.1.0",
-    "ink-select-input": "^6.2.0",
     "inquirer": "^12.9.1",
-    "minimatch": "^10.0.3",
     "react": "^19.1.1",
     "toml": "^3.0.0",
     "yaml": "^2.8.1"
