@@ -83,6 +83,8 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     selectedActionIndex: 0,
     columnIndex: -1
   });
+  const [filterMode, setFilterMode] = useState(false);
+  const [filterText, setFilterText] = useState<string[]>([]);
 
   // Calculate the maximum number of items that can be displayed
   const getMaxVisibleItems = () => {
@@ -490,14 +492,28 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     // Update selected index
     newColumns[columnIndex] = { ...column, selectedIndex: itemIndex };
     
-    // Adjust scroll offset if needed to keep selection visible
-    const currentScrollOffset = column.scrollOffset;
-    if (itemIndex < currentScrollOffset) {
-      // Scroll up to show the selected item
-      newColumns[columnIndex].scrollOffset = itemIndex;
-    } else if (itemIndex >= currentScrollOffset + maxVisible) {
-      // Scroll down to show the selected item
-      newColumns[columnIndex].scrollOffset = itemIndex - maxVisible + 1;
+    // Get filtered items to calculate proper scroll offset
+    const columnFilter = filterText[columnIndex] || '';
+    const filteredItems = columnFilter 
+      ? column.items.filter(item => 
+          item.name.toLowerCase().includes(columnFilter.toLowerCase())
+        )
+      : column.items;
+    
+    // Find the position of the selected item in the filtered list
+    const selectedItem = column.items[itemIndex];
+    const filteredIndex = selectedItem ? filteredItems.indexOf(selectedItem) : -1;
+    
+    if (filteredIndex !== -1) {
+      // Adjust scroll offset based on filtered position
+      const currentScrollOffset = column.scrollOffset;
+      if (filteredIndex < currentScrollOffset) {
+        // Scroll up to show the selected item
+        newColumns[columnIndex].scrollOffset = filteredIndex;
+      } else if (filteredIndex >= currentScrollOffset + maxVisible) {
+        // Scroll down to show the selected item
+        newColumns[columnIndex].scrollOffset = filteredIndex - maxVisible + 1;
+      }
     }
     
     setColumns(newColumns);
@@ -535,16 +551,134 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     const currentColumn = columns[activeColumnIndex];
     if (!currentColumn) return;
 
-    if (key.upArrow || (input === 'k' && !key.ctrl && !key.meta && !key.shift)) {
-      const newIndex = currentColumn.selectedIndex === 0 
-        ? currentColumn.items.length - 1  // Loop to bottom
-        : currentColumn.selectedIndex - 1;
-      updateSelection(activeColumnIndex, newIndex);
+    // Handle filter mode input
+    if (filterMode) {
+      if (key.escape) {
+        // Clear filter and exit filter mode
+        setFilterText(prev => {
+          const newFilters = [...prev];
+          newFilters[activeColumnIndex] = '';
+          return newFilters;
+        });
+        // Reset scroll and selection
+        const newColumns = [...columns];
+        if (newColumns[activeColumnIndex]) {
+          newColumns[activeColumnIndex].scrollOffset = 0;
+          newColumns[activeColumnIndex].selectedIndex = 0;
+        }
+        setColumns(newColumns);
+        setFilterMode(false);
+      } else if (key.backspace || key.delete) {
+        // Remove last character from filter
+        setFilterText(prev => {
+          const newFilters = [...prev];
+          if (newFilters[activeColumnIndex]) {
+            newFilters[activeColumnIndex] = newFilters[activeColumnIndex].slice(0, -1);
+          }
+          return newFilters;
+        });
+      } else if (key.return) {
+        // Exit filter mode
+        setFilterMode(false);
+      } else if (input && input.length === 1 && !key.ctrl && !key.meta) {
+        // Add character to filter for current column
+        setFilterText(prev => {
+          const newFilters = [...prev];
+          newFilters[activeColumnIndex] = (newFilters[activeColumnIndex] || '') + input;
+          return newFilters;
+        });
+      }
+      return;
+    }
+
+    // Regular navigation mode
+    if (input === 'f' && !key.ctrl && !key.meta && !key.shift) {
+      // Enter filter mode
+      setFilterMode(true);
+      return;
+    } else if (input === 'c' && !key.ctrl && !key.meta && !key.shift) {
+      // Clear filter for current column
+      setFilterText(prev => {
+        const newFilters = [...prev];
+        newFilters[activeColumnIndex] = '';
+        return newFilters;
+      });
+      // Reset scroll offset when clearing filter
+      const newColumns = [...columns];
+      if (newColumns[activeColumnIndex]) {
+        newColumns[activeColumnIndex].scrollOffset = 0;
+        newColumns[activeColumnIndex].selectedIndex = 0;
+      }
+      setColumns(newColumns);
+      return;
+    } else if (key.upArrow || (input === 'k' && !key.ctrl && !key.meta && !key.shift)) {
+      // Get filtered items for navigation
+      const columnFilter = filterText[activeColumnIndex] || '';
+      const filteredItems = columnFilter 
+        ? currentColumn.items.filter(item => 
+            item.name.toLowerCase().includes(columnFilter.toLowerCase())
+          )
+        : currentColumn.items;
+      
+      if (filteredItems.length === 0) return;
+      
+      // Find current selected item in filtered list
+      const currentItem = currentColumn.items[currentColumn.selectedIndex];
+      const currentFilteredIndex = currentItem ? filteredItems.indexOf(currentItem) : -1;
+      
+      let newFilteredIndex;
+      if (currentFilteredIndex === -1) {
+        // Selected item is not in filtered list, select first item
+        newFilteredIndex = 0;
+      } else {
+        // Move up in filtered list
+        newFilteredIndex = currentFilteredIndex === 0 
+          ? filteredItems.length - 1  // Loop to bottom
+          : currentFilteredIndex - 1;
+      }
+      
+      // Get the actual index in the unfiltered list
+      const newItem = filteredItems[newFilteredIndex];
+      if (newItem) {
+        const newIndex = currentColumn.items.indexOf(newItem);
+        if (newIndex !== -1) {
+          updateSelection(activeColumnIndex, newIndex);
+        }
+      }
     } else if (key.downArrow || (input === 'j' && !key.ctrl && !key.meta && !key.shift)) {
-      const newIndex = currentColumn.selectedIndex === currentColumn.items.length - 1
-        ? 0  // Loop to top
-        : currentColumn.selectedIndex + 1;
-      updateSelection(activeColumnIndex, newIndex);
+      // Get filtered items for navigation
+      const columnFilter = filterText[activeColumnIndex] || '';
+      const filteredItems = columnFilter 
+        ? currentColumn.items.filter(item => 
+            item.name.toLowerCase().includes(columnFilter.toLowerCase())
+          )
+        : currentColumn.items;
+      
+      if (filteredItems.length === 0) return;
+      
+      // Find current selected item in filtered list
+      const currentItem = currentColumn.items[currentColumn.selectedIndex];
+      const currentFilteredIndex = currentItem ? filteredItems.indexOf(currentItem) : -1;
+      
+      let newFilteredIndex;
+      if (currentFilteredIndex === -1) {
+        // Selected item is not in filtered list, select first item
+        newFilteredIndex = 0;
+      } else {
+        // Move down in filtered list
+        newFilteredIndex = currentFilteredIndex === filteredItems.length - 1
+          ? 0  // Loop to top
+          : currentFilteredIndex + 1;
+      }
+      
+      // Get the actual index in the unfiltered list
+      const newItem = filteredItems[newFilteredIndex];
+      if (newItem) {
+        const newIndex = currentColumn.items.indexOf(newItem);
+        if (newIndex !== -1) {
+          updateSelection(activeColumnIndex, newIndex);
+        }
+      }
     } else if (key.leftArrow || (input === 'h' && !key.ctrl && !key.meta && !key.shift)) {
       // Move to previous column or close action menu/found values
       if (currentColumn.title.startsWith('Actions:')) {
@@ -571,6 +705,8 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         newColumns.splice(activeColumnIndex); // Remove columns to the right of where we're going
         setColumns(newColumns);
         setActiveColumnIndex(activeColumnIndex - 1);
+        // Clear filters for removed columns
+        setFilterText(prev => prev.slice(0, activeColumnIndex));
       }
       } else if (key.rightArrow || (input === 'l' && !key.ctrl && !key.meta && !key.shift)) {
       // First check if current item can be "opened" (has actions or children)
@@ -703,7 +839,11 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         <Text bold color="blue">📂 Config File Explorer - Miller Columns</Text>
       </Box>
       <Box marginBottom={1}>
-        <Text dimColor>↑↓/jk: Navigate | ←→/hl: Switch columns | Enter: Actions | q/Esc: Exit</Text>
+        {filterMode ? (
+          <Text dimColor>Typing filter... | Esc: Cancel | Enter: Apply</Text>
+        ) : (
+          <Text dimColor>↑↓/jk: Navigate | ←→/hl: Switch columns | f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
+        )}
       </Box>
       
       {/* Breadcrumb when columns are hidden */}
@@ -804,6 +944,15 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                   color={columnIndex === activeColumnIndex ? 'cyan' : 'gray'}
                 >
                   {columnIndex === activeColumnIndex ? '▶ ' : '  '}{column.title}
+                  {filterText[columnIndex] && (
+                    <Text color="yellow">
+                      {' [🔍 '}
+                      {filterText[columnIndex].length > 10 
+                        ? filterText[columnIndex].substring(0, 10) + '...' 
+                        : filterText[columnIndex]}
+                      {']'}
+                    </Text>
+                  )}
                 </Text>
               </Box>
               
@@ -812,9 +961,27 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                 {(() => {
                   const maxVisible = getMaxVisibleItems();
                   const scrollOffset = column.scrollOffset || 0;
-                  const visibleItems = column.items.slice(scrollOffset, scrollOffset + maxVisible);
+                  
+                  // Apply filter if one exists for this column
+                  const columnFilter = filterText[columnIndex] || '';
+                  const filteredItems = columnFilter 
+                    ? column.items.filter(item => 
+                        item.name.toLowerCase().includes(columnFilter.toLowerCase())
+                      )
+                    : column.items;
+                  
+                  // Show message if filter returns no results
+                  if (filteredItems.length === 0 && columnFilter) {
+                    return (
+                      <Box>
+                        <Text dimColor italic>No items match "{columnFilter}"</Text>
+                      </Box>
+                    );
+                  }
+                  
+                  const visibleItems = filteredItems.slice(scrollOffset, scrollOffset + maxVisible);
                   const hasScrollUp = scrollOffset > 0;
-                  const hasScrollDown = scrollOffset + maxVisible < column.items.length;
+                  const hasScrollDown = scrollOffset + maxVisible < filteredItems.length;
                   
                   return (
                     <>
@@ -827,9 +994,10 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                       
                       {/* Visible items */}
                       {visibleItems.map((item, visibleIndex) => {
-                        const itemIndex = scrollOffset + visibleIndex;
-                        const isSelected = itemIndex === column.selectedIndex && columnIndex === activeColumnIndex;
-                        const isHighlighted = itemIndex === column.selectedIndex && columnIndex <= activeColumnIndex;
+                        // Get the actual index of this item in the original unfiltered list
+                        const actualItemIndex = column.items.indexOf(item);
+                        const isSelected = actualItemIndex === column.selectedIndex && columnIndex === activeColumnIndex;
+                        const isHighlighted = actualItemIndex === column.selectedIndex && columnIndex <= activeColumnIndex;
                         
                         let icon: string;
                         if (item.isConfigEntry) {
@@ -846,7 +1014,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                         const displayName = item.name.length > maxTextLength ? item.name.substring(0, truncateLength) + '...' : item.name;
                         
                         return (
-                          <Box key={itemIndex}>
+                          <Box key={actualItemIndex}>
                             <Text 
                               color={isSelected ? 'black' : (isHighlighted ? 'white' : undefined)}
                               backgroundColor={isSelected ? 'white' : (isHighlighted ? 'gray' : undefined)}
@@ -862,7 +1030,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                       {/* Scroll indicator at bottom */}
                       {hasScrollDown && (
                         <Box>
-                          <Text dimColor>  ↓ {column.items.length - scrollOffset - maxVisible} more...</Text>
+                          <Text dimColor>  ↓ {filteredItems.length - scrollOffset - maxVisible} more...</Text>
                         </Box>
                       )}
                     </>
@@ -877,7 +1045,13 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
       
       {/* Status message or full value display */}
       <Box marginTop={1}>
-        {statusMessage ? (
+        {filterMode ? (
+          <Text>
+            <Text dimColor>Filter: </Text>
+            <Text color="cyan">{filterText[activeColumnIndex] || ''}</Text>
+            <Text color="gray">█</Text>
+          </Text>
+        ) : statusMessage ? (
           <Text color="green">{statusMessage}</Text>
         ) : (() => {
           // Show full value of selected item if it's a config entry

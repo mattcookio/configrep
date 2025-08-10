@@ -61,6 +61,8 @@ cfg search "localhost" --values-only
 
 - **Miller Columns Navigation**: Browse through directories and files in a hierarchical view
 - **Flat Dot Notation**: All nested values are displayed using dot notation (e.g., `database.host`, `servers[0].port`)
+- **Interactive Filtering**: Press `f` to filter items in current column, `c` to clear filter, `Esc` to cancel
+- **Automatic Scrolling**: Large files are paginated with scroll indicators showing hidden items
 - **Quick Actions**: Press `Enter` on any config value to access copy/search actions
 - **Array Handling**: Arrays of primitives are shown as single values, while arrays of objects are expanded with index notation
 

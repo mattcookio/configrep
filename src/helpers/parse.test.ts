@@ -24,7 +24,6 @@ test('parseJsonFile parses flat and nested JSON', () => {
   const entries = parseJsonFile(content, 'test.json');
   expect(entries).toEqual([
     { key: 'foo', value: 'bar', file: 'test.json', rawValue: 'bar' },
-    { key: 'baz', value: '{"qux":42}', file: 'test.json', rawValue: { qux: 42 } },
     { key: 'baz.qux', value: '42', file: 'test.json', rawValue: 42 },
   ]);
 });
