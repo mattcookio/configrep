@@ -95,6 +95,9 @@ class ConfigExplorer {
   }
 
   private async browseInteractiveTree(): Promise<void> {
+    // Clear the console to remove the menu
+    console.clear();
+    
     const tree = await buildFileTree(this.configFiles, this.rootDirectory);
     
     // Parse config files if not already parsed
@@ -124,8 +127,10 @@ class ConfigExplorer {
   }
 
   private async interactiveSearch(): Promise<void> {
+    // Clear the console to remove the menu
+    console.clear();
+    
     if (this.parsedConfigs.length === 0) {
-      console.log('\nParsing all config files...');
       for (const file of this.configFiles) {
         const parsed = await parseConfigFile(file);
         this.parsedConfigs.push(parsed);
