@@ -39,9 +39,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm --minify --sourcemap",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap",
     "start": "bun run src/index.ts",
     "dev": "bun run src/index.ts",
+    "test": "bun test",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
@@ -61,6 +62,7 @@
     "ink-select-input": "^6.2.0",
     "inquirer": "^12.9.1",
     "inquirer-autocomplete-prompt": "^3.0.1",
+    "minimatch": "^10.0.3",
     "react": "^19.1.1"
   }
 }

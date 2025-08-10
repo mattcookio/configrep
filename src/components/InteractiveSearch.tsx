@@ -22,16 +22,15 @@ interface TreeNode {
 
 interface InteractiveSearchProps {
   allEntries: ConfigEntry[];
-  onExit: () => void;
   buildFilteredTree: (entries: ConfigEntry[], filter: string) => Promise<TreeNode>;
+  allConfigs?: Map<string, ConfigEntry[]>;
 }
 
 const InteractiveSearch: React.FC<InteractiveSearchProps> = ({ 
   allEntries, 
-  onExit, 
-  buildFilteredTree 
-}) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  buildFilteredTree,
+  allConfigs
+}) => {  const [searchTerm, setSearchTerm] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeNode | null>(null);
   const [isSearchMode, setIsSearchMode] = useState(true);
 
@@ -64,8 +63,9 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
         // Handle backspace
         setSearchTerm(prev => prev.slice(0, -1));
       } else if (key.escape) {
-        // Exit
-        onExit();
+        // Exit immediately
+        console.log('\nGoodbye! 👋');
+        process.exit(0);
       } else if (input && input.length === 1 && !key.ctrl && !key.meta) {
         // Add character to search term
         setSearchTerm(prev => prev + input);
@@ -129,7 +129,7 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
     <MillerTree 
       key={`nav-${Date.now()}`}
       tree={filteredTree} 
-      onExit={onExit}
+      allConfigs={allConfigs}
     />
   );
 };
