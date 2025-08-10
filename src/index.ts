@@ -260,7 +260,7 @@ class ConfigExplorer {
 program
   .name('cfg')
   .description('Config file explorer and analyzer')
-  .version('1.4.0');
+  .version('1.5.0');
 
 // Initialize config file
 program
