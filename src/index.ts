@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import { resolve } from 'path';
 import React from 'react';
 import { render } from 'ink';
-import { minimatch } from 'minimatch';
+
 import MillerTree from './components/MillerTree';
 import InteractiveSearch from './components/InteractiveSearch';
 
@@ -253,9 +253,9 @@ class ConfigExplorer {
 
 // CLI setup
 program
-  .name('configrep')
+  .name('cfg')
   .description('Config file explorer and analyzer')
-  .version('1.0.0');
+  .version('1.0.2');
 
 // Initialize config file
 program
@@ -347,11 +347,11 @@ program
 program.action(async () => {
   console.log('🔍 ConfiGREP - Config File Explorer\n');
   console.log('Usage:');
-  console.log('  configrep init [dir]       Create example configrep.json config file');
-  console.log('  configrep interactive (i)  Launch interactive explorer');
-  console.log('  configrep list (ls)        List all config files');
-  console.log('  configrep show (s)         Show all config entries');
-  console.log('  configrep search <term>    Search config entries');
+  console.log('  cfg init [dir]       Create example configrep.json config file');
+  console.log('  cfg interactive (i)  Launch interactive explorer');
+  console.log('  cfg list (ls)        List all config files');
+  console.log('  cfg show (s)         Show all config entries');
+  console.log('  cfg search <term>    Search config entries');
   console.log('\nUse --help with any command for more options.');
   console.log('Tip: Create a configrep.json file to set default options.');
 });

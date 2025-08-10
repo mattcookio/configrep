@@ -12,6 +12,9 @@ pnpm dlx configrep search "database"
 
 # Install globally
 npm install -g configrep
+
+# After installation, use the 'cfg' command
+cfg interactive
 ```
 
 ## Configuration
@@ -19,7 +22,7 @@ npm install -g configrep
 Create a `configrep.json` file to set defaults:
 
 ```bash
-configrep init  # Creates config in current directory
+cfg init  # Creates config in current directory
 ```
 
 ```json
@@ -37,21 +40,21 @@ CLI flags override config file settings.
 
 ```bash
 # Interactive explorer (Miller Columns interface)
-configrep interactive
-configrep i  # shorthand
+cfg interactive
+cfg i  # shorthand
 
 # List all config files
-configrep list
-configrep ls  # shorthand
+cfg list
+cfg ls  # shorthand
 
 # Show all configuration entries
-configrep show
-configrep s  # shorthand
+cfg show
+cfg s  # shorthand
 
 # Search configuration entries
-configrep search "database"
-configrep search "API" --keys-only
-configrep search "localhost" --values-only
+cfg search "database"
+cfg search "API" --keys-only
+cfg search "localhost" --values-only
 ```
 
 ### Interactive Mode Features
@@ -77,16 +80,16 @@ ENV, JSON, YAML, TOML, INI files
 
 ```bash
 # Find database configurations
-configrep search "database\|db\|sql" --keys-only
+cfg search "database\|db\|sql" --keys-only
 
 # Audit API keys
-configrep search "key\|token\|secret"
+cfg search "key\|token\|secret"
 
 # Ignore build artifacts
-configrep list --ignore "node_modules" "dist" ".git"
+cfg list --ignore "node_modules" "dist" ".git"
 
 # Setup project config
-configrep init
+cfg init
 ```
 
 ## License
