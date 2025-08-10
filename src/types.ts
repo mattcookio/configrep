@@ -11,6 +11,7 @@ export interface ConfigEntry {
   key: string;
   value: string;
   file: string;
+  rawValue?: any; // Store the original parsed value for JSON objects/arrays
 }
 
 export interface ParsedConfig {

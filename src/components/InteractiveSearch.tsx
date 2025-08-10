@@ -6,6 +6,7 @@ interface ConfigEntry {
   key: string;
   value: string;
   file: string;
+  rawValue?: any;
 }
 
 interface TreeNode {
@@ -88,8 +89,9 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
   }
 
   if (isSearchMode) {
-    const matchCount = filteredTree.children.reduce((total, fileNode) => 
-      total + fileNode.children.length, 0
+    const children = Array.isArray(filteredTree.children) ? filteredTree.children : [];
+    const matchCount = children.reduce((total, fileNode) => 
+      total + (Array.isArray(fileNode.children) ? fileNode.children.length : 0), 0
     );
 
     return (
@@ -104,20 +106,20 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
           <Text>Search: <Text color="cyan">{searchTerm}</Text><Text color="gray">█</Text></Text>
         </Box>
         <Box marginBottom={1}>
-          <Text color="green">Found {matchCount} matching entries in {filteredTree.children.length} files</Text>
+          <Text color="green">Found {matchCount} matching entries in {children.length} files</Text>
         </Box>
         
         {/* Show preview of results */}
         <Box flexDirection="column">
-          {filteredTree.children.slice(0, 10).map((fileNode, index) => (
+          {children.slice(0, 10).map((fileNode, index) => (
             <Box key={index}>
               <Text dimColor>
                 📄 {fileNode.name}
               </Text>
             </Box>
           ))}
-          {filteredTree.children.length > 10 && (
-            <Text dimColor>... and {filteredTree.children.length - 10} more files</Text>
+          {children.length > 10 && (
+            <Text dimColor>... and {children.length - 10} more files</Text>
           )}
         </Box>
       </Box>

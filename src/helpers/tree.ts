@@ -7,7 +7,7 @@ export async function buildFileTree(configFiles: ConfigFile[], rootDirectory: st
     name: basename(rootDirectory) || 'root',
     path: rootDirectory,
     isFile: false,
-    children: []
+    children: [] as TreeNode[]
   };
   for (const configFile of configFiles) {
     const pathParts = configFile.relativePath.split('/').filter(Boolean);
@@ -39,7 +39,13 @@ export async function buildFileTree(configFiles: ConfigFile[], rootDirectory: st
       try {
         const parsed = await parseConfigFile(configFile);
         if (!parsed.error && parsed.entries.length > 0) {
-          for (const entry of parsed.entries) {
+          // For JSON/YAML/TOML, only show top-level entries in the tree
+          // but keep all entries for searching
+          const entriesToShow = (configFile.type === 'json' || configFile.type === 'yaml' || configFile.type === 'toml')
+            ? parsed.entries.filter(entry => !entry.key.includes('.'))
+            : parsed.entries;
+            
+          for (const entry of entriesToShow) {
             fileNode.children.push({
               name: `${entry.key} = ${entry.value.length > 50 ? entry.value.substring(0, 50) + '...' : entry.value}`,
               path: `${configFile.path}#${entry.key}`,

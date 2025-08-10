@@ -38,18 +38,28 @@ CLI flags override config file settings.
 ```bash
 # Interactive explorer (Miller Columns interface)
 configrep interactive
+configrep i  # shorthand
 
 # List all config files
 configrep list
+configrep ls  # shorthand
 
 # Show all configuration entries
 configrep show
+configrep s  # shorthand
 
 # Search configuration entries
 configrep search "database"
 configrep search "API" --keys-only
 configrep search "localhost" --values-only
 ```
+
+### Interactive Mode Features
+
+- **Miller Columns Navigation**: Browse through directories and files in a hierarchical view
+- **JSON Drilling**: For nested JSON values, press `→` or `l` to progressively drill into objects and arrays
+- **Quick Actions**: Press `Enter` on any config value to access copy/search actions
+- **Visual Indicators**: Nested values show `{n}` for objects or `[n]` for arrays to indicate drillable content
 
 ## Options
 

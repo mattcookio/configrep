@@ -1,4 +1,6 @@
 import { readFile } from 'fs/promises';
+import * as YAML from 'yaml';
+import * as TOML from 'toml';
 import type { ConfigFile, ParsedConfig, ConfigEntry } from '../types.ts';
 
 export async function parseConfigFile(configFile: ConfigFile): Promise<ParsedConfig> {
@@ -61,18 +63,33 @@ export function parseJsonFile(content: string, filePath: string): ConfigEntry[] 
   return entries;
 }
 
+export function parseJsonValue(value: string): any {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 export function parseYamlFile(content: string, filePath: string): ConfigEntry[] {
-  // Simple YAML parsing - for production use a proper YAML parser
   const entries: ConfigEntry[] = [];
-  const lines = content.split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#') && trimmed.includes(':')) {
-      const [key, ...valueParts] = trimmed.split(':');
-      if (key) {
-        const value = valueParts.join(':').trim().replace(/^['"]|['"]$/g, '');
-        if (value) {
-          entries.push({ key: key.trim(), value, file: filePath });
+  try {
+    const yamlData = YAML.parse(content);
+    if (yamlData && typeof yamlData === 'object') {
+      flattenObject(yamlData, '', entries, filePath, true);
+    }
+  } catch (error) {
+    // Fall back to simple parsing if YAML parsing fails
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes(':')) {
+        const [key, ...valueParts] = trimmed.split(':');
+        if (key) {
+          const value = valueParts.join(':').trim().replace(/^['"]|['"]$/g, '');
+          if (value) {
+            entries.push({ key: key.trim(), value, file: filePath });
+          }
         }
       }
     }
@@ -81,16 +98,23 @@ export function parseYamlFile(content: string, filePath: string): ConfigEntry[] 
 }
 
 export function parseTomlFile(content: string, filePath: string): ConfigEntry[] {
-  // Simple TOML parsing - for production use a proper TOML parser
   const entries: ConfigEntry[] = [];
-  const lines = content.split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
-      const [key, ...valueParts] = trimmed.split('=');
-      if (key) {
-        const value = valueParts.join('=').trim().replace(/^['"]|['"]$/g, '');
-        entries.push({ key: key.trim(), value, file: filePath });
+  try {
+    const tomlData = TOML.parse(content);
+    if (tomlData && typeof tomlData === 'object') {
+      flattenObject(tomlData, '', entries, filePath, true);
+    }
+  } catch (error) {
+    // Fall back to simple parsing if TOML parsing fails
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [key, ...valueParts] = trimmed.split('=');
+        if (key) {
+          const value = valueParts.join('=').trim().replace(/^['"]|['"]$/g, '');
+          entries.push({ key: key.trim(), value, file: filePath });
+        }
       }
     }
   }
@@ -117,16 +141,29 @@ export function parseIniFile(content: string, filePath: string): ConfigEntry[] {
   return entries;
 }
 
-export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], filePath: string): void {
+export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], filePath: string, skipChildren = true): void {
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      flattenObject(value, fullKey, entries, filePath);
-    } else {
+    if (typeof value === 'object' && value !== null) {
+      // Store the object/array itself as a raw value
       entries.push({
         key: fullKey,
-        value: Array.isArray(value) ? JSON.stringify(value) : String(value),
-        file: filePath
+        value: JSON.stringify(value),
+        file: filePath,
+        rawValue: value
+      });
+      // Always flatten children to make them searchable, even for nested formats
+      // We'll filter what to display in the UI
+      if (!Array.isArray(value)) {
+        flattenObject(value, fullKey, entries, filePath, skipChildren);
+      }
+    } else {
+      // Store primitive values
+      entries.push({
+        key: fullKey,
+        value: String(value),
+        file: filePath,
+        rawValue: value
       });
     }
   }

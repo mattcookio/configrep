@@ -86,25 +86,47 @@ export function findMatchingKeys(
       
       // Check for exact match (case-insensitive, normalized)
       if (entryKeyLower === targetKeyLower) {
+        // Check if this entry contains a nested object that we should skip
+        const entryValue = entry.rawValue !== undefined ? entry.rawValue : parseComplexValue(entry.value);
+        
+        // Skip entries that are objects/arrays when we're looking for a specific value
+        // For example, skip "database.pool" when looking for "database_pool_max"
+        if (typeof entryValue === 'object' && entryValue !== null) {
+          // This is a parent object, skip it - we want the leaf value
+          continue;
+        }
+        
         results.push({
           file,
           key: entry.key,
-          value: parseComplexValue(entry.value),
+          value: entryValue,
           originalValue: entry.value,
           conversionNeeded: file.type !== currentFile.type,
           conversionWarning: undefined
         });
       }
-      // Also check if this matches a nested path (for multi-level values)
-      else if (matchesNestedPath(targetKey, entryKeyParts)) {
-        results.push({
-          file,
-          key: entry.key,
-          value: parseComplexValue(entry.value),
-          originalValue: entry.value,
-          conversionNeeded: file.type !== currentFile.type,
-          conversionWarning: undefined
-        });
+      // Also check if the entry key ends with our target key
+      // This handles cases like "database.pool.max" matching "max"
+      else if (entryKeyParts.length > targetKeyParts.length) {
+        // Check if the last parts of the entry match our target
+        const entryTail = entryKeyParts.slice(-targetKeyParts.length);
+        const entryTailLower = entryTail.join('_').toLowerCase();
+        
+        if (entryTailLower === targetKeyLower) {
+          const entryValue = entry.rawValue !== undefined ? entry.rawValue : parseComplexValue(entry.value);
+          
+          // Only include if it's not an object (we want the actual value)
+          if (typeof entryValue !== 'object' || entryValue === null) {
+            results.push({
+              file,
+              key: entry.key,
+              value: entryValue,
+              originalValue: entry.value,
+              conversionNeeded: file.type !== currentFile.type,
+              conversionWarning: undefined
+            });
+          }
+        }
       }
     }
   }
@@ -204,9 +226,9 @@ export function calculateMatchScore(key1Parts: string[], key2Parts: string[]): n
 }
 
 /**
- * Check if a key matches a nested path
- * @param flatKey - Flat key like "DATABASE_HOST"
- * @param nestedPath - Path in nested object like ["database", "host"]
+ * Check if a flat key matches a nested path
+ * @param flatKey - The flat key to match (e.g., "database_pool_max")
+ * @param nestedPath - The nested path parts (e.g., ["database", "pool", "max"])
  * @returns True if they match
  */
 export function matchesNestedPath(flatKey: string, nestedPath: string[]): boolean {
@@ -256,12 +278,29 @@ export function convertValue(
   targetType: ConfigFile['type'],
   key: string
 ): ConversionResult {
-  // Check for environment variables
+  // First, handle primitives (numbers, booleans, strings)
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    // Simple conversion to string for any format
+    return {
+      success: true,
+      value: String(value)
+    };
+  }
+  
+  // Check for environment variables in strings
   if (typeof value === 'string' && containsEnvVariables(value)) {
     return {
       success: true,
       value: value,
       warning: 'Value contains environment variables'
+    };
+  }
+  
+  // Handle regular strings
+  if (typeof value === 'string') {
+    return {
+      success: true,
+      value: value
     };
   }
   
@@ -308,16 +347,32 @@ export function convertValue(
     };
   }
   
-  // Handle primitives
-  if (targetType === 'env') {
-    // Everything becomes a string in env files
+  // Handle numbers and booleans
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    // Convert to string for env files
     return {
       success: true,
       value: String(value)
     };
   }
   
-  // For JSON/YAML/TOML, preserve type when possible
+  // Handle strings
+  if (typeof value === 'string') {
+    return {
+      success: true,
+      value: value
+    };
+  }
+  
+  // Handle null/undefined
+  if (value === null || value === undefined) {
+    return {
+      success: true,
+      value: ''
+    };
+  }
+  
+  // Fallback - convert to string
   return {
     success: true,
     value: String(value)

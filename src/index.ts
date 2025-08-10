@@ -310,6 +310,7 @@ program
 // Show all config entries
 program
   .command('show')
+  .alias('s')
   .description('Show all config entries from all files')
   .option('-f, --file <path>', 'Show entries from specific file only')
   .option('-g, --glob <pattern...>', 'Show entries from files matching glob patterns (e.g., "*.env" "**/.json")')
@@ -346,11 +347,11 @@ program
 program.action(async () => {
   console.log('🔍 ConfiGREP - Config File Explorer\n');
   console.log('Usage:');
-  console.log('  configrep init [dir]     Create example configrep.json config file');
-  console.log('  configrep interactive    Launch interactive explorer');
-  console.log('  configrep list           List all config files');
-  console.log('  configrep show           Show all config entries');
-  console.log('  configrep search <term>  Search config entries');
+  console.log('  configrep init [dir]       Create example configrep.json config file');
+  console.log('  configrep interactive (i)  Launch interactive explorer');
+  console.log('  configrep list (ls)        List all config files');
+  console.log('  configrep show (s)         Show all config entries');
+  console.log('  configrep search <term>    Search config entries');
   console.log('\nUse --help with any command for more options.');
   console.log('Tip: Create a configrep.json file to set default options.');
 });
