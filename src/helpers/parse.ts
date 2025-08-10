@@ -162,7 +162,7 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
           
           entries.push({
             key: fullKey,
-            value: `[${preview}${moreText}]`,
+            value: `[ ${preview}${moreText} ]`,
             file: filePath,
             rawValue: value
           });
@@ -178,7 +178,7 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
               
               entries.push({
                 key: arrayKey,
-                value: `{${preview}${moreText}}`,
+                value: `{ ${preview}${moreText} }`,
                 file: filePath,
                 rawValue: item
               });
@@ -216,7 +216,7 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
         
         entries.push({
           key: fullKey,
-          value: `{${preview}${moreText}}`,
+          value: `{ ${preview}${moreText} }`,
           file: filePath,
           rawValue: value
         });
