@@ -260,10 +260,10 @@ export function printTree(node: TreeNode, prefix = '', isLast = true): void {
       } else if (value.startsWith('[') && value.endsWith(']')) {
         icon = '[]';  // Array of primitives (JSON stringified)
       } else {
-        icon = '•';  // Primitive value (bullet point)
+        icon = '-';  // Primitive value (dash)
       }
     } else {
-      icon = '•';
+      icon = '-';
     }
   } else if (node.isFile) {
     icon = '📋';

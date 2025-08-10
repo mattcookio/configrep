@@ -1104,11 +1104,10 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                             } else if (value.startsWith('[') && value.endsWith(']')) {
                               icon = '[]';  // Array of primitives (JSON stringified)
                             } else {
-                              icon = '•';  // Primitive value (bullet point)
-                            }
-                          } else {
-                            icon = '•';
-                          }
+              icon = '-';  // Primitive value (dash)
+            }
+          } else {
+            icon = '-';                          }
                         } else if (item.isFile) {
                           icon = getFileIcon(item.configFile?.type || 'unknown');
                         } else if (column.title.startsWith('Actions:')) {
