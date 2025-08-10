@@ -91,7 +91,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
     const terminalHeight = stdout?.rows || 24;
     
     // Count reserved lines:
-    // - Header: "📂 Config File Explorer - Miller Columns" (1 line)
+    // - Header: "📂 Config File Explorer" (1 line)
     // - Help text: "↑↓/jk: Navigate | ←→/hl: Switch columns..." (1 line)
     // - Breadcrumb (when columns are hidden): "Path: ..." (0-1 line, let's assume 1)
     // - Column title: "▶ filename" (1 line)
@@ -917,7 +917,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text bold color="blue">📂 Config File Explorer - Miller Columns</Text>
+        <Text bold color="blue">📂 Config File Explorer</Text>
       </Box>
       <Box marginBottom={1}>
         {filterMode ? (
