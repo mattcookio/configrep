@@ -43,3 +43,5 @@ export interface ConfiGREPConfig {
     ini?: boolean;
   };
 }
+
+export * from './types/backup';
