@@ -195,12 +195,12 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
         
         if (hasObjects) {
           // Add entry for the array itself with a preview
-          const preview = value.slice(0, 2).map((item, idx) => {
+          const preview = value.slice(0, 2).map((item) => {
             if (typeof item === 'object' && item !== null) {
               const keys = Object.keys(item).slice(0, 2).join(', ');
-              return `[${idx}]: {${keys}...}`;
+              return `{${keys}...}`;
             }
-            return `[${idx}]: ${JSON.stringify(item)}`;
+            return JSON.stringify(item);
           }).join(', ');
           const moreText = value.length > 2 ? `, ... +${value.length - 2} more` : '';
           
