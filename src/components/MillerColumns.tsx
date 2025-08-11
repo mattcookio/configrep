@@ -1111,7 +1111,32 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                           icon = '📁';
                         }
                         
-                        const displayName = item.name.length > maxTextLength ? item.name.substring(0, truncateLength) + '...' : item.name;
+                        let displayName = item.name.length > maxTextLength ? item.name.substring(0, truncateLength) + '...' : item.name;
+                        
+                        // Check if this is a config entry with dot notation for special rendering
+                        let hasParentPath = false;
+                        let parentPath = '';
+                        let leafKey = '';
+                        let valuePart = '';
+                        
+                        if (item.isConfigEntry && item.configEntry && displayName.includes('.')) {
+                          const parts = displayName.split(' = ');
+                          if (parts.length === 2 && parts[0] && parts[1]) {
+                            const keyPart = parts[0];
+                            valuePart = parts[1];
+                            
+                            // Split the key by dots and make all but the last part dimmer
+                            const keySegments = keyPart.split('.');
+                            if (keySegments.length > 1) {
+                              parentPath = keySegments.slice(0, -1).join('.');
+                              const lastSegment = keySegments[keySegments.length - 1];
+                              if (lastSegment) {
+                                leafKey = lastSegment;
+                                hasParentPath = true;
+                              }
+                            }
+                          }
+                        }
                         
                         return (
                           <Box key={actualItemIndex}>
@@ -1121,7 +1146,15 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                               bold={isHighlighted}
                             >
                               {isSelected ? '❯ ' : (isHighlighted ? '• ' : '  ')}
-                              {icon && `${icon} `}{displayName}
+                              {icon && `${icon} `}
+                              {hasParentPath ? (
+                                <>
+                                  <Text dimColor>{parentPath}.</Text>
+                                  {leafKey} = {valuePart}
+                                </>
+                              ) : (
+                                displayName
+                              )}
                             </Text>
                           </Box>
                         );
