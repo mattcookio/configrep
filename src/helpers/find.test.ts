@@ -125,6 +125,13 @@ describe('findMatchingKeys', () => {
     ['/project/config.json', [
       { key: 'database.host', value: 'staging.example.com', file: '/project/config.json' },
       { key: 'apiKey', value: 'staging-key', file: '/project/config.json' }
+    ]],
+    ['/project/config.ini', [
+      { key: 'database', value: '{ host: ini.example.com, port: 5432 }', file: '/project/config.ini', rawValue: { host: 'ini.example.com', port: 5432 } },
+      { key: 'database.host', value: 'ini.example.com', file: '/project/config.ini' },
+      { key: 'database.port', value: '5432', file: '/project/config.ini' },
+      { key: 'api', value: '{ key: ini-api-key }', file: '/project/config.ini', rawValue: { key: 'ini-api-key' } },
+      { key: 'api.key', value: 'ini-api-key', file: '/project/config.ini' }
     ]]
   ]);
 
@@ -157,6 +164,29 @@ describe('findMatchingKeys', () => {
       const targetKeyNormalized = 'DATABASE_HOST'.toLowerCase().replace(/[_-]/g, '').replace(/\./g, '');
       expect(resultKeyNormalized).toBe(targetKeyNormalized);
     });
+  });
+
+  test('finds matches across INI sections', () => {
+    const results = findMatchingKeys('DATABASE_HOST', currentFile, allConfigs);
+    // Should find database.host from INI file
+    const iniMatch = results.find(r => r.file.path === '/project/config.ini' && r.key === 'database.host');
+    expect(iniMatch).toBeDefined();
+    expect(iniMatch?.value).toBe('ini.example.com');
+  });
+
+  test('finds API key matches in INI files', () => {
+    const results = findMatchingKeys('API_KEY', currentFile, allConfigs);
+    // Should find api.key from INI file
+    const iniMatch = results.find(r => r.file.path === '/project/config.ini' && r.key === 'api.key');
+    expect(iniMatch).toBeDefined();
+    expect(iniMatch?.value).toBe('ini-api-key');
+  });
+
+  test('excludes INI section objects from primitive key matches', () => {
+    const results = findMatchingKeys('DATABASE_HOST', currentFile, allConfigs);
+    // Should not include the section object itself (database = { ... })
+    const sectionMatch = results.find(r => r.key === 'database');
+    expect(sectionMatch).toBeUndefined();
   });
 });
 
