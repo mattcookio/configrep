@@ -6,25 +6,30 @@ import type {
   BackupFileRecord, 
   BackupVersion, 
   BackupOptions, 
-  BackupResult
+  BackupResult,
+  EncryptedBackup
 } from '../types/backup';
 import { findConfigFiles } from './discovery';
 import { parseConfigFile } from './parse';
 import { generateJsonPatch, applyPatches } from './diff';
+import { encryptData, decryptData } from './crypto';
 
 export function hashContent(content: any): string {
   const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
   return createHash('sha256').update(contentStr).digest('hex');
 }
 
-export async function loadBackup(backupPath: string): Promise<BackupManifest | null> {
+export async function loadBackup(backupPath: string, password?: string): Promise<BackupManifest | null> {
   try {
     await access(backupPath);
     const content = await readFile(backupPath, 'utf-8');
     const data = JSON.parse(content);
     
     if (data.encrypted) {
-      throw new Error('Backup is encrypted. Use decryption functionality to load.');
+      if (!password) {
+        throw new Error('Backup is encrypted but no password provided');
+      }
+      return decryptData(data as EncryptedBackup, password);
     }
     
     return data as BackupManifest;
@@ -36,8 +41,16 @@ export async function loadBackup(backupPath: string): Promise<BackupManifest | n
   }
 }
 
-export async function saveBackup(manifest: BackupManifest, backupPath: string): Promise<void> {
-  const content = JSON.stringify(manifest, null, 2);
+export async function saveBackup(manifest: BackupManifest, backupPath: string, password?: string): Promise<void> {
+  let content: string;
+  
+  if (password) {
+    const encrypted = encryptData(manifest, password);
+    content = JSON.stringify(encrypted, null, 2);
+  } else {
+    content = JSON.stringify(manifest, null, 2);
+  }
+  
   await writeFile(backupPath, content, 'utf-8');
 }
 
@@ -142,7 +155,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
       };
     }
 
-    const existingBackup = await loadBackup(backupPath);
+    const existingBackup = await loadBackup(backupPath, options.password);
     const now = new Date().toISOString();
     let changesDetected = 0;
 
@@ -218,15 +231,16 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
       };
     }
 
-    await saveBackup(manifest, backupPath);
-    await ensureGitIgnore(backupPath, false);
+    const isEncrypted = !!options.password;
+    await saveBackup(manifest, backupPath, options.password);
+    await ensureGitIgnore(backupPath, isEncrypted);
 
     return {
       success: true,
       backupPath,
       filesProcessed: configFiles.length,
       changesDetected,
-      encrypted: false
+      encrypted: isEncrypted
     };
 
   } catch (error) {
@@ -245,10 +259,11 @@ export async function restoreFromBackup(
   backupPath: string,
   filePath: string,
   version: number,
-  outputPath?: string
+  outputPath?: string,
+  password?: string
 ): Promise<{ success: boolean; error?: string; restoredPath?: string }> {
   try {
-    const manifest = await loadBackup(backupPath);
+    const manifest = await loadBackup(backupPath, password);
     if (!manifest) {
       return { success: false, error: 'Backup file not found' };
     }

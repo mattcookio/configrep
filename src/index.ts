@@ -17,6 +17,8 @@ import { loadConfigFile, mergeConfigWithOptions, createExampleConfig } from './h
 import { findConfigFiles } from './helpers/discovery';
 import { parseConfigFile } from './helpers/parse';
 import { buildFileTree, buildSimpleFileTree, buildFilteredTree, printTree } from './helpers/tree';
+import { createBackup } from './helpers/backup';
+import { promptPassword, getPasswordFromEnv } from './helpers/prompt';
 
 class ConfigExplorer {
   private configFiles: ConfigFile[] = [];
@@ -363,6 +365,65 @@ program
     
     const explorer = new ConfigExplorer();
     await explorer.searchEntries(term, mergedOptions);
+  });
+
+// Backup config files
+program
+  .command('backup')
+  .alias('bk')
+  .description('Create or update backup of config files')
+  .option('--password', 'Encrypt backup with password (prompts for password)')
+  .option('--output <file>', 'Backup file path', 'configrep.backup.json')
+  .option('--dir <path>', 'Directory to backup', process.cwd())
+  .option('--ignore <pattern...>', 'Glob patterns to ignore (e.g., "node_modules" "*.tmp")', [])
+  .option('--depth <number>', 'Maximum directory depth to scan', '5')
+  .option('--dry-run', 'Preview changes without writing backup')
+  .action(async (options) => {
+    const config = await loadConfigFile();
+    const ignoreExplicitlyProvided = options.ignore && options.ignore.length > 0;
+    const mergedOptions = mergeConfigWithOptions(config, options, ignoreExplicitlyProvided);
+    
+    let password: string | undefined;
+    
+    if (options.password) {
+      password = getPasswordFromEnv();
+      if (!password) {
+        console.log('🔐 Encrypting backup...');
+        password = await promptPassword();
+      }
+    }
+    
+    console.log('🔍 Scanning for config files...');
+    
+    const result = await createBackup({
+      directory: mergedOptions.dir,
+      ignore: mergedOptions.ignore,
+      depth: parseInt(mergedOptions.depth),
+      output: options.output,
+      password,
+      dryRun: options.dryRun
+    });
+
+    if (result.success) {
+      if (options.dryRun) {
+        console.log('✅ Dry run completed');
+        console.log(`   Files: ${result.filesProcessed}`);
+        console.log(`   Changes detected: ${result.changesDetected}`);
+        console.log(`   Encryption: ${password ? 'Yes' : 'No'}`);
+      } else {
+        console.log(`✅ Backup ${result.changesDetected > 0 ? 'updated' : 'verified'}: ${result.backupPath}`);
+        console.log(`   Files: ${result.filesProcessed}`);
+        console.log(`   Changes detected: ${result.changesDetected}`);
+        if (result.encrypted) {
+          console.log('   🔒 Encrypted (safe for git)');
+        } else {
+          console.log('   ⚠️  Unencrypted (added to .gitignore)');
+        }
+      }
+    } else {
+      console.error(`❌ Backup failed: ${result.error}`);
+      process.exit(1);
+    }
   });
 
 // Default action when no command is specified
