@@ -279,3 +279,213 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
     }
   }
 }
+
+/**
+ * Reconstruction functions - Convert JavaScript objects back to various config formats
+ */
+
+/**
+ * Convert a JavaScript object to INI format
+ * @param obj - The object to convert
+ * @returns INI format string
+ */
+export function objectToIni(obj: any): string {
+  const lines: string[] = [];
+  const sections: Record<string, Record<string, any>> = {};
+  const rootKeys: Record<string, any> = {};
+  
+  // Separate root keys from sectioned keys
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      sections[key] = value;
+    } else {
+      rootKeys[key] = value;
+    }
+  }
+  
+  // Add root keys first (keys without sections)
+  for (const [key, value] of Object.entries(rootKeys)) {
+    let formattedValue: string;
+    if (Array.isArray(value)) {
+      // Handle arrays - if they contain objects, stringify them
+      formattedValue = value.map(item => 
+        typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item)
+      ).join(',');
+    } else {
+      formattedValue = String(value);
+    }
+    lines.push(`${key}=${formattedValue}`);
+  }
+  
+  // Add sections
+  for (const [sectionName, sectionObj] of Object.entries(sections)) {
+    if (lines.length > 0) lines.push(''); // Empty line before section
+    lines.push(`[${sectionName}]`);
+    
+    for (const [key, value] of Object.entries(sectionObj)) {
+      let formattedValue: string;
+      if (Array.isArray(value)) {
+        // Handle arrays - if they contain objects, stringify them
+        formattedValue = value.map(item => 
+          typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item)
+        ).join(',');
+      } else if (typeof value === 'object' && value !== null) {
+        formattedValue = JSON.stringify(value);
+      } else {
+        formattedValue = String(value);
+      }
+      lines.push(`${key}=${formattedValue}`);
+    }
+  }
+  
+  return lines.join('\n');
+}
+
+/**
+ * Convert a JavaScript object to YAML format
+ * @param obj - The object to convert
+ * @returns YAML format string
+ */
+export function objectToYaml(obj: any): string {
+  return YAML.stringify(obj);
+}
+
+/**
+ * Convert a JavaScript object to TOML format
+ * @param obj - The object to convert
+ * @returns TOML format string
+ */
+export function objectToToml(obj: any): string {
+  const lines: string[] = [];
+  const tables: Record<string, any> = {};
+  const rootKeys: Record<string, any> = {};
+  
+  // Separate root keys from tables
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      tables[key] = value;
+    } else {
+      rootKeys[key] = value;
+    }
+  }
+  
+  // Add root keys first
+  for (const [key, value] of Object.entries(rootKeys)) {
+    let formattedValue: string;
+    if (typeof value === 'string') {
+      formattedValue = `"${value.replace(/"/g, '\\"')}"`;
+    } else if (Array.isArray(value)) {
+      const arrayItems = value.map(item => {
+        if (typeof item === 'string') {
+          return `"${item.replace(/"/g, '\\"')}"`;
+        } else if (typeof item === 'object' && item !== null) {
+          return JSON.stringify(item);
+        } else {
+          return String(item);
+        }
+      });
+      formattedValue = `[${arrayItems.join(', ')}]`;
+    } else {
+      formattedValue = String(value);
+    }
+    lines.push(`${key} = ${formattedValue}`);
+  }
+  
+  // Add tables
+  for (const [tableName, tableObj] of Object.entries(tables)) {
+    if (lines.length > 0) lines.push(''); // Empty line before table
+    lines.push(`[${tableName}]`);
+    
+    for (const [key, value] of Object.entries(tableObj)) {
+      let formattedValue: string;
+      if (typeof value === 'string') {
+        formattedValue = `"${value.replace(/"/g, '\\"')}"`;
+      } else if (Array.isArray(value)) {
+        const arrayItems = value.map(item => {
+          if (typeof item === 'string') {
+            return `"${item.replace(/"/g, '\\"')}"`;
+          } else if (typeof item === 'object' && item !== null) {
+            return JSON.stringify(item);
+          } else {
+            return String(item);
+          }
+        });
+        formattedValue = `[${arrayItems.join(', ')}]`;
+      } else if (typeof value === 'object' && value !== null) {
+        formattedValue = JSON.stringify(value);
+      } else {
+        formattedValue = String(value);
+      }
+      lines.push(`${key} = ${formattedValue}`);
+    }
+  }
+  
+  return lines.join('\n');
+}
+
+/**
+ * Convert a JavaScript object to ENV format (flattened with dot notation)
+ * @param obj - The object to convert
+ * @param prefix - Optional prefix for keys
+ * @returns ENV format string
+ */
+export function objectToEnv(obj: any, prefix: string = ''): string {
+  const lines: string[] = [];
+  
+  function flattenToEnv(value: any, keyPath: string) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // Recursively flatten nested objects
+      for (const [key, val] of Object.entries(value)) {
+        const newPath = keyPath ? `${keyPath}.${key}` : key;
+        flattenToEnv(val, newPath);
+      }
+    } else {
+      // Convert to env format - normalize key to uppercase with underscores
+      const envKey = keyPath
+        .toUpperCase()
+        .replace(/[.\-\s]/g, '_')  // Replace dots, dashes, and spaces with underscores
+        .replace(/[^A-Z0-9_]/g, ''); // Remove any other special characters
+      
+      let envValue: string;
+      
+      if (Array.isArray(value)) {
+        // Handle arrays - if they contain objects, stringify them
+        envValue = value.map(item => 
+          typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item)
+        ).join(',');
+      } else if (typeof value === 'string' && (value.includes(' ') || value.includes('"') || value.includes('\n'))) {
+        envValue = `"${value.replace(/"/g, '\\"')}"`;
+      } else {
+        envValue = String(value);
+      }
+      
+      lines.push(`${envKey}=${envValue}`);
+    }
+  }
+  
+  flattenToEnv(obj, prefix);
+  return lines.join('\n');
+}
+
+/**
+ * Convert a JavaScript object to the specified format
+ * @param obj - The object to convert
+ * @param format - Target format
+ * @returns Formatted string
+ */
+export function objectToFormat(obj: any, format: 'json' | 'yaml' | 'toml' | 'ini' | 'env'): string {
+  switch (format) {
+    case 'json':
+      return JSON.stringify(obj, null, 2);
+    case 'yaml':
+      return objectToYaml(obj);
+    case 'toml':
+      return objectToToml(obj);
+    case 'ini':
+      return objectToIni(obj);
+    case 'env':
+      return objectToEnv(obj);
+    default:
+      throw new Error(`Unsupported format: ${format}`);
+  }
+}
