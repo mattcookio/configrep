@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useApp } from 'ink';
 import MillerColumns from './MillerColumns';
 
 interface ConfigEntry {
@@ -31,7 +31,9 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
   allEntries, 
   buildFilteredTree,
   allConfigs
-}) => {  const [searchTerm, setSearchTerm] = useState('');
+}) => {
+  const { exit } = useApp();
+  const [searchTerm, setSearchTerm] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeNode | null>(null);
   const [isSearchMode, setIsSearchMode] = useState(true);
 
@@ -64,8 +66,8 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
         // Handle backspace
         setSearchTerm(prev => prev.slice(0, -1));
       } else if (key.escape) {
-        // Exit immediately
-        process.exit(0);
+        // Exit gracefully through Ink
+        exit();
       } else if (input && input.length === 1 && !key.ctrl && !key.meta) {
         // Add character to search term
         setSearchTerm(prev => prev + input);
@@ -95,37 +97,39 @@ const InteractiveSearch: React.FC<InteractiveSearchProps> = ({
 
     return (
       <Box flexDirection="column">
-        <Box height={1}>{/* Blank line at top */}</Box>
-        <Box marginBottom={1}>
-          <Box flexDirection="column">
-            <Box>
-              <Text bold color="blue">ConfiGREP</Text>
-              <Text dimColor> | Interactive Search</Text>
-            </Box>
-            <Box>
-              <Text dimColor>Type to filter | Enter: Browse results | Esc: Exit</Text>
-            </Box>
+        {/* Header - always visible */}
+        <Box flexDirection="column" marginBottom={1}>
+          <Box>
+            <Text bold color="blue">ConfiGREP</Text>
+            <Text dimColor> | Interactive Search</Text>
+          </Box>
+          <Box>
+            <Text dimColor>Type to filter | Enter: Browse results | Esc: Exit</Text>
           </Box>
         </Box>
-        <Box marginBottom={1}>
-          <Text>Search: <Text color="cyan">{searchTerm}</Text><Text color="gray">█</Text></Text>
-        </Box>
-        <Box marginBottom={1}>
-          <Text color="green">Found {matchCount} matching entries in {children.length} files</Text>
-        </Box>
         
-        {/* Show preview of results */}
+        {/* Main content area */}
         <Box flexDirection="column">
-          {children.slice(0, 10).map((fileNode, index) => (
-            <Box key={index}>
-              <Text dimColor>
-                📄 {fileNode.name}
-              </Text>
-            </Box>
-          ))}
-          {children.length > 10 && (
-            <Text dimColor>... and {children.length - 10} more files</Text>
-          )}
+          <Box marginBottom={1}>
+            <Text>Search: <Text color="cyan">{searchTerm}</Text><Text color="gray">█</Text></Text>
+          </Box>
+          <Box marginBottom={1}>
+            <Text color="green">Found {matchCount} matching entries in {children.length} files</Text>
+          </Box>
+          
+          {/* Show preview of results */}
+          <Box flexDirection="column">
+            {children.slice(0, 10).map((fileNode, index) => (
+              <Box key={index}>
+                <Text dimColor>
+                  📄 {fileNode.name}
+                </Text>
+              </Box>
+            ))}
+            {children.length > 10 && (
+              <Text dimColor>... and {children.length - 10} more files</Text>
+            )}
+          </Box>
         </Box>
       </Box>
     );

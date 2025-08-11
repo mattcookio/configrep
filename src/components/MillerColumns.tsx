@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useApp } from 'ink';
 import { useStdout } from 'ink';
 import clipboardy from 'clipboardy';
 import { findMatchingKeys, applyFoundValue, type FoundValue } from '../helpers/find';
@@ -74,6 +74,7 @@ const detectFileType = (filePath: string): ConfigFile['type'] => {
 
 const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
   const { stdout } = useStdout();
+  const { exit } = useApp();
   const [columns, setColumns] = useState<Column[]>([]);
   const [activeColumnIndex, setActiveColumnIndex] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
@@ -86,21 +87,18 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
   const [filterMode, setFilterMode] = useState(false);
   const [filterText, setFilterText] = useState<string[]>([]);
 
-  // Calculate the maximum number of items that can be displayed
   const getMaxVisibleItems = () => {
     const terminalHeight = stdout?.rows || 24;
     
-    // Count reserved lines:
-    // - Header with controls: "ConfiGREP | ..." (2 lines when not filtering, 1 line when filtering)
-    // - Breadcrumb (when columns are hidden): "Path: ..." (0-1 line, let's assume 1)
-    // - Column title: "▶ filename" (1 line)
-    // - Bottom margin before status (1 line)
-    // - Status message OR full value display (2-3 lines for full value)
-    // - Terminal padding/margins (1-2 lines for safety)
+    // Reserved lines for UI elements:
+    // Header (3) + Column title (2) + Footer margin (1) + Footer (2) + Buffer (1) = 9
+    let reservedLines = 9;
     
-    let reservedLines = filterMode ? 8 : 9; // Base reservation (extra line for controls when not filtering)
+    const { startIndex, endIndex } = getColumnRange();
+    if (startIndex > 0 || endIndex < columns.length) {
+      reservedLines += 2; // Breadcrumb + margin
+    }
     
-    // Add extra line if we're showing a full value (which can be 2-3 lines)
     const currentColumn = columns[activeColumnIndex];
     if (currentColumn) {
       const selectedItem = currentColumn.items[currentColumn.selectedIndex];
@@ -109,8 +107,7 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
       }
     }
     
-    // Ensure we always show at least 5 items even on very small terminals
-    return Math.max(5, terminalHeight - reservedLines);
+    return Math.max(3, terminalHeight - reservedLines);
   };
 
   // Get the range of columns to display (always include the active column)
@@ -904,69 +901,65 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         }
       }
     } else if (key.escape) {
-      // Escape exits immediately
-      process.exit(0);
+      // Escape exits gracefully through Ink
+      exit();
     } else if (input === 'q') {
-      // 'q' exits immediately
-      process.exit(0);
+      // 'q' exits gracefully through Ink
+      exit();
     }
   });
 
   return (
     <Box flexDirection="column">
-      <Box height={1}>{/* Blank line at top */}</Box>
-      <Box marginBottom={1}>
-        {filterMode ? (
-          <Box flexDirection="column">
-            <Box>
-              <Text bold color="blue">ConfiGREP</Text>
-              <Text dimColor> | Typing filter...</Text>
-            </Box>
-            <Box>
-              <Text dimColor>Esc: Cancel | Enter: Apply</Text>
-            </Box>
-          </Box>
-        ) : (
-          <Box flexDirection="column">
-            <Box>
-              <Text bold color="blue">ConfiGREP</Text>
-              <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
-            </Box>
-            <Box>
-              <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
-            </Box>
-          </Box>
-        )}
+      {/* Header - always visible */}
+      <Box flexDirection="column" marginBottom={1}>
+        <Box>
+          <Text bold color="blue">ConfiGREP</Text>
+          {filterMode ? (
+            <Text dimColor> | Typing filter...</Text>
+          ) : (
+            <Text dimColor> | ↑↓/jk: Navigate | ←→/hl: Switch columns</Text>
+          )}
+        </Box>
+        <Box>
+          {filterMode ? (
+            <Text dimColor>Esc: Cancel | Enter: Apply</Text>
+          ) : (
+            <Text dimColor>f: Filter | c: Clear | Enter: Actions | q/Esc: Exit</Text>
+          )}
+        </Box>
       </Box>
       
-      {/* Breadcrumb when columns are hidden */}
-      {(() => {
-        const { startIndex, endIndex } = getColumnRange();
-        const hasHiddenLeft = startIndex > 0;
-        const hasHiddenRight = endIndex < columns.length;
+      {/* Main content area */}
+      <Box flexDirection="column">
+        {/* Breadcrumb when columns are hidden */}
+        {(() => {
+          const { startIndex, endIndex } = getColumnRange();
+          const hasHiddenLeft = startIndex > 0;
+          const hasHiddenRight = endIndex < columns.length;
+          
+          if (hasHiddenLeft || hasHiddenRight) {
+            const visibleTitles = columns.slice(startIndex, endIndex).map(col => col.title);
+            let breadcrumb = '';
+            
+            if (hasHiddenLeft) {
+              breadcrumb += '... › ';
+            }
+            breadcrumb += visibleTitles.join(' › ');
+            if (hasHiddenRight) {
+              breadcrumb += ' › ...';
+            }
+            
+            return (
+              <Box marginBottom={1}>
+                <Text dimColor>Path: {breadcrumb}</Text>
+              </Box>
+            );
+          }
+          return null;
+        })()}
         
-        if (hasHiddenLeft || hasHiddenRight) {
-          const visibleTitles = columns.slice(startIndex, endIndex).map(col => col.title);
-          let breadcrumb = '';
-          
-          if (hasHiddenLeft) {
-            breadcrumb += '... › ';
-          }
-          breadcrumb += visibleTitles.join(' › ');
-          if (hasHiddenRight) {
-            breadcrumb += ' › ...';
-          }
-          
-          return (
-            <Box marginBottom={1}>
-              <Text dimColor>Path: {breadcrumb}</Text>
-            </Box>
-          );
-        }
-        return null;
-      })()}
-      
-      <Box flexDirection="row" position="relative">
+        <Box flexDirection="row">
         {(() => {
           const { startIndex, endIndex } = getColumnRange();
           const visibleColumns = columns.slice(startIndex, endIndex);
@@ -1148,9 +1141,10 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
             );
           });
         })()}
+        </Box>
       </Box>
       
-      {/* Status message or full value display */}
+      {/* Footer */}
       <Box marginTop={1}>
         {filterMode ? (
           <Text>

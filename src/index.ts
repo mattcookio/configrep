@@ -46,13 +46,17 @@ class ConfigExplorer {
   }
 
   async runInteractive(ignorePatterns: string[] = []): Promise<void> {
-    console.log(''); // Blank line before title
+    // Enter alternate screen buffer for the entire interactive session
+    process.stdout.write('\x1b[?1049h\x1b[H');
+    
     console.log('🔍 ConfiGREP - Interactive Config File Explorer\n');
     console.log('Scanning for config files recursively...');
     this.configFiles = await this.findConfigFiles(this.rootDirectory, 5, ignorePatterns);
 
     if (this.configFiles.length === 0) {
       console.log('No config files found in the current directory tree.');
+      // Exit alternate screen buffer before returning
+      process.stdout.write('\x1b[?1049l');
       return;
     }
 
@@ -76,11 +80,17 @@ class ConfigExplorer {
         switch (action) {
           case 'Browse':
             await this.browseInteractiveTree();
+            // Exit alternate screen buffer after browse
+            process.stdout.write('\x1b[?1049l');
             return;
           case 'Search':
             await this.interactiveSearch();
+            // Exit alternate screen buffer after search
+            process.stdout.write('\x1b[?1049l');
             return;
           case 'Exit':
+            // Exit alternate screen buffer before showing goodbye
+            process.stdout.write('\x1b[?1049l');
             console.log('Goodbye! 👋');
             return;
         }
@@ -89,10 +99,14 @@ class ConfigExplorer {
         if (error && typeof error === 'object' && 'name' in error) {
           const errorName = (error as any).name;
           if (errorName === 'ExitPromptError') {
+            // Exit alternate screen buffer before showing goodbye
+            process.stdout.write('\x1b[?1049l');
             console.log('\nGoodbye! 👋');
             return;
           }
         }
+        // Exit alternate screen buffer before re-throwing
+        process.stdout.write('\x1b[?1049l');
         // Re-throw other errors
         throw error;
       }
@@ -119,13 +133,15 @@ class ConfigExplorer {
       }
     }
     
-    render(
+    const app = render(
       React.createElement(MillerColumns, {
         key: Date.now(),
         tree,
         allConfigs
       })
     );
+    
+    await app.waitUntilExit();
   }
 
   private async interactiveSearch(): Promise<void> {
@@ -151,7 +167,7 @@ class ConfigExplorer {
       }
     }
     
-    render(
+    const app = render(
       React.createElement(InteractiveSearch, {
         key: Date.now(),
         allEntries,
@@ -159,6 +175,8 @@ class ConfigExplorer {
         allConfigs
       })
     );
+    
+    await app.waitUntilExit();
   }
 
   async listFiles(maxDepth: number = 5, options?: { glob?: string[]; dir?: string; ignore?: string[] }): Promise<void> {
