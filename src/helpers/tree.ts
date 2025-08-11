@@ -37,7 +37,7 @@ function buildNestedTree(entries: ConfigEntry[], filePath: string): TreeNode[] {
   function convertToTreeNodes(obj: any, prefix: string = ''): TreeNode[] {
     const nodes: TreeNode[] = [];
     
-    for (const [key, value] of Object.entries(obj)) {
+    for (const [key, value] of Object.entries(obj).sort(([a], [b]) => a.localeCompare(b))) {
       const fullKey = prefix ? `${prefix}.${key}` : key;
       
       if (value && typeof value === 'object' && 'key' in value && 'value' in value) {

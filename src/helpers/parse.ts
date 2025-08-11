@@ -155,7 +155,7 @@ export function parseIniFile(content: string, filePath: string): ConfigEntry[] {
   
   // Second pass: create entries with section objects
   for (const [sectionName, sectionData] of Object.entries(sections)) {
-    const sectionKeys = Object.keys(sectionData);
+    const sectionKeys = Object.keys(sectionData).sort();
     if (sectionKeys.length > 0) {
       // Create section object entry with preview
       const preview = sectionKeys.slice(0, 3).map(k => {
@@ -172,7 +172,7 @@ export function parseIniFile(content: string, filePath: string): ConfigEntry[] {
       });
       
       // Create individual key entries
-      for (const [key, value] of Object.entries(sectionData)) {
+      for (const [key, value] of Object.entries(sectionData).sort(([a], [b]) => a.localeCompare(b))) {
         entries.push({
           key: `${sectionName}.${key}`,
           value,
@@ -186,7 +186,7 @@ export function parseIniFile(content: string, filePath: string): ConfigEntry[] {
 }
 
 export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], filePath: string, skipChildren = true): void {
-  for (const [key, value] of Object.entries(obj)) {
+  for (const [key, value] of Object.entries(obj).sort(([a], [b]) => a.localeCompare(b))) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
     if (typeof value === 'object' && value !== null) {
       if (Array.isArray(value)) {
@@ -197,7 +197,7 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
           // Add entry for the array itself with a preview
           const preview = value.slice(0, 2).map((item) => {
             if (typeof item === 'object' && item !== null) {
-              const keys = Object.keys(item).slice(0, 2).join(', ');
+              const keys = Object.keys(item).sort().slice(0, 2).join(', ');
               return `{${keys}...}`;
             }
             return JSON.stringify(item);
@@ -216,7 +216,7 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
             const arrayKey = `${fullKey}[${index}]`;
             if (typeof item === 'object' && item !== null) {
               // Add entry for each array item object with preview
-              const itemKeys = Object.keys(item);
+              const itemKeys = Object.keys(item).sort();
               const preview = itemKeys.slice(0, 3).map(k => `${k}: ${JSON.stringify(item[k])}`).join(', ');
               const moreText = itemKeys.length > 3 ? `, ... +${itemKeys.length - 3} more` : '';
               
@@ -250,7 +250,7 @@ export function flattenObject(obj: any, prefix: string, entries: ConfigEntry[], 
         }
       } else {
         // Regular object - add entry for the object itself with preview
-        const objKeys = Object.keys(value);
+        const objKeys = Object.keys(value).sort();
         const preview = objKeys.slice(0, 3).map(k => {
           const val = value[k as keyof typeof value];
           const valStr = typeof val === 'object' ? '{...}' : JSON.stringify(val);
