@@ -1,6 +1,6 @@
 {
   "name": "configrep",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "CLI tool for exploring configuration files",
   "main": "dist/index.js",
   "module": "dist/index.js",
