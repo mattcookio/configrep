@@ -124,20 +124,64 @@ export function parseTomlFile(content: string, filePath: string): ConfigEntry[] 
 export function parseIniFile(content: string, filePath: string): ConfigEntry[] {
   const entries: ConfigEntry[] = [];
   const lines = content.split('\n');
+  const sections: { [key: string]: { [key: string]: string } } = {};
   let currentSection = '';
+  
+  // First pass: parse into sections
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
       currentSection = trimmed.slice(1, -1);
+      if (!sections[currentSection]) {
+        sections[currentSection] = {};
+      }
     } else if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith(';') && trimmed.includes('=')) {
       const [key, ...valueParts] = trimmed.split('=');
       if (key) {
         const value = valueParts.join('=').trim();
-        const fullKey = currentSection ? `${currentSection}.${key.trim()}` : key.trim();
-        entries.push({ key: fullKey, value, file: filePath });
+        const cleanKey = key.trim();
+        if (currentSection) {
+          if (!sections[currentSection]) {
+            sections[currentSection] = {};
+          }
+          sections[currentSection]![cleanKey] = value;
+        } else {
+          // Root level key
+          entries.push({ key: cleanKey, value, file: filePath });
+        }
       }
     }
   }
+  
+  // Second pass: create entries with section objects
+  for (const [sectionName, sectionData] of Object.entries(sections)) {
+    const sectionKeys = Object.keys(sectionData);
+    if (sectionKeys.length > 0) {
+      // Create section object entry with preview
+      const preview = sectionKeys.slice(0, 3).map(k => {
+        const val = sectionData[k];
+        return `${k}: ${val || ''}`;
+      }).join(', ');
+      const moreText = sectionKeys.length > 3 ? `, ... +${sectionKeys.length - 3} more` : '';
+      
+      entries.push({
+        key: sectionName,
+        value: `{ ${preview}${moreText} }`,
+        file: filePath,
+        rawValue: sectionData
+      });
+      
+      // Create individual key entries
+      for (const [key, value] of Object.entries(sectionData)) {
+        entries.push({
+          key: `${sectionName}.${key}`,
+          value,
+          file: filePath
+        });
+      }
+    }
+  }
+  
   return entries;
 }
 

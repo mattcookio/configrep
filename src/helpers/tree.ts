@@ -254,16 +254,16 @@ export function printTree(node: TreeNode, prefix = '', isLast = true): void {
     if (valueMatch && valueMatch[1]) {
       const value = valueMatch[1];
       if (value.startsWith('{ ')) {
-        icon = '●';  // Object (solid circle)
+        icon = '{}';  // Object
       } else if (value.startsWith('[ ')) {
-        icon = '■';  // Array (solid square)
+        icon = '[]';  // Array
       } else if (value.startsWith('[') && value.endsWith(']')) {
-        icon = '■';  // Array of primitives (solid square)
+        icon = '[]';  // Array of primitives
       } else {
-        icon = '•';  // Primitive value (bullet)
+        icon = '--';  // Primitive value
       }
     } else {
-      icon = '•';
+      icon = '--';
     }
   } else if (node.isFile) {
     icon = '📋';
