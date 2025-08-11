@@ -412,10 +412,10 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
         message = `✅ Copied value to clipboard`;
         break;
       case 3: // Copy key=value
-        // For key=value format, use formatted JSON for objects/arrays
+        // For key=value format, use single-line JSON for objects/arrays
         let formatValue: string;
         if (entry.rawValue !== undefined && typeof entry.rawValue === 'object') {
-          formatValue = JSON.stringify(entry.rawValue, null, 2);
+          formatValue = JSON.stringify(entry.rawValue); // Single line for key=value
         } else if (entry.rawValue !== undefined) {
           formatValue = String(entry.rawValue);
         } else {
