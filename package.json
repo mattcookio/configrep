@@ -6,7 +6,7 @@
   "module": "dist/index.js",
   "type": "module",
   "bin": {
-    "cfg": "./dist/index.js"
+    "cfg": "dist/index.js"
   },
   "keywords": [
     "config",
@@ -24,7 +24,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mattcookio/configrep.git"
+    "url": "git+https://github.com/mattcookio/configrep.git"
   },
   "homepage": "https://github.com/mattcookio/configrep#readme",
   "bugs": {
