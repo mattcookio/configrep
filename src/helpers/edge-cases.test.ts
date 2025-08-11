@@ -136,9 +136,15 @@ describe('Edge cases and error handling', () => {
     test('handles INI files with multiple sections', () => {
       const iniContent = '[section1]\nkey1=value1\n[section2]\nkey2=value2';
       const entries = parseIniFile(iniContent, 'sections.ini');
-      expect(entries).toHaveLength(2);
-      expect(entries[0]?.key).toBe('section1.key1');
-      expect(entries[1]?.key).toBe('section2.key2');
+      expect(entries).toHaveLength(4); // 2 section objects + 2 individual keys
+      
+      // Check section objects
+      expect(entries.find(e => e.key === 'section1')).toBeDefined();
+      expect(entries.find(e => e.key === 'section2')).toBeDefined();
+      
+      // Check individual keys
+      expect(entries.find(e => e.key === 'section1.key1')?.value).toBe('value1');
+      expect(entries.find(e => e.key === 'section2.key2')?.value).toBe('value2');
     });
   });
 

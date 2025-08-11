@@ -24,6 +24,7 @@ test('parseJsonFile parses flat and nested JSON', () => {
   const entries = parseJsonFile(content, 'test.json');
   expect(entries).toEqual([
     { key: 'foo', value: 'bar', file: 'test.json', rawValue: 'bar' },
+    { key: 'baz', value: '{ qux: 42 }', file: 'test.json', rawValue: { qux: 42 } },
     { key: 'baz.qux', value: '42', file: 'test.json', rawValue: 42 },
   ]);
 });
@@ -50,10 +51,16 @@ test('parseTomlFile parses simple TOML', () => {
   ]);
 });
 
-test('parseIniFile parses sections and keys', () => {
+test('parseIniFile parses sections and keys with hierarchical structure', () => {
   const content = '[section]\nfoo=bar\nbaz=qux';
   const entries = parseIniFile(content, 'test.ini');
   expect(entries).toEqual([
+    { 
+      key: 'section', 
+      value: '{ foo: bar, baz: qux }', 
+      file: 'test.ini',
+      rawValue: { foo: 'bar', baz: 'qux' }
+    },
     { key: 'section.foo', value: 'bar', file: 'test.ini' },
     { key: 'section.baz', value: 'qux', file: 'test.ini' },
   ]);
@@ -64,6 +71,63 @@ test('parseIniFile parses keys outside sections', () => {
   const entries = parseIniFile(content, 'test.ini');
   expect(entries).toEqual([
     { key: 'foo', value: 'bar', file: 'test.ini' },
+    { 
+      key: 'section', 
+      value: '{ baz: qux }', 
+      file: 'test.ini',
+      rawValue: { baz: 'qux' }
+    },
     { key: 'section.baz', value: 'qux', file: 'test.ini' },
   ]);
+});
+
+test('parseIniFile handles multiple sections with previews', () => {
+  const content = `[api]
+default_version=v1
+master_key=mk_live_123
+public_key=pk_live_456
+
+[database]
+host=localhost
+port=5432
+name=myapp
+
+[cache]
+driver=redis`;
+  const entries = parseIniFile(content, 'test.ini');
+  
+  // Should have section objects and individual keys
+  expect(entries.length).toBe(10); // 3 sections + 7 individual keys
+  
+  // Check section objects
+  const apiSection = entries.find(e => e.key === 'api');
+  expect(apiSection).toBeDefined();
+  expect(apiSection?.value).toContain('default_version: v1');
+  expect(apiSection?.value).toContain('master_key: mk_live_123');
+  expect(apiSection?.rawValue).toEqual({
+    default_version: 'v1',
+    master_key: 'mk_live_123',
+    public_key: 'pk_live_456'
+  });
+  
+  // Check individual keys
+  expect(entries.find(e => e.key === 'api.default_version')?.value).toBe('v1');
+  expect(entries.find(e => e.key === 'database.host')?.value).toBe('localhost');
+  expect(entries.find(e => e.key === 'cache.driver')?.value).toBe('redis');
+});
+
+test('parseIniFile handles sections with many keys (truncated preview)', () => {
+  const content = `[section]
+key1=value1
+key2=value2
+key3=value3
+key4=value4
+key5=value5`;
+  const entries = parseIniFile(content, 'test.ini');
+  
+  const sectionEntry = entries.find(e => e.key === 'section');
+  expect(sectionEntry?.value).toContain('key1: value1');
+  expect(sectionEntry?.value).toContain('key2: value2');
+  expect(sectionEntry?.value).toContain('key3: value3');
+  expect(sectionEntry?.value).toContain('... +2 more'); // Should truncate after 3 keys
 });
