@@ -1092,16 +1092,16 @@ const MillerTree: React.FC<MillerTreeProps> = ({ tree, allConfigs }) => {
                           if (valueMatch && valueMatch[1]) {
                             const value = valueMatch[1];
                             if (value.startsWith('{ ')) {
-                              icon = '{}';  // Object (even if truncated)
+                              icon = '●';  // Object (solid circle)
                             } else if (value.startsWith('[ ')) {
-                              icon = '[]';  // Array (even if truncated)
+                              icon = '■';  // Array (solid square)
                             } else if (value.startsWith('[') && value.endsWith(']')) {
-                              icon = '[]';  // Array of primitives (JSON stringified)
+                              icon = '■';  // Array of primitives (solid square)
                             } else {
-              icon = '-';  // Primitive value (dash)
+              icon = '•';  // Primitive value (bullet)
             }
           } else {
-            icon = '-';                          }
+            icon = '•';                          }
                         } else if (item.isFile) {
                           icon = getFileIcon(item.configFile?.type || 'unknown');
                         } else if (column.title.startsWith('Actions:')) {
