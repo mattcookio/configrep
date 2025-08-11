@@ -23,9 +23,9 @@ test('parseJsonFile parses flat and nested JSON', () => {
   const content = '{"foo": "bar", "baz": {"qux": 42}}';
   const entries = parseJsonFile(content, 'test.json');
   expect(entries).toEqual([
-    { key: 'foo', value: 'bar', file: 'test.json', rawValue: 'bar' },
     { key: 'baz', value: '{ qux: 42 }', file: 'test.json', rawValue: { qux: 42 } },
     { key: 'baz.qux', value: '42', file: 'test.json', rawValue: 42 },
+    { key: 'foo', value: 'bar', file: 'test.json', rawValue: 'bar' },
   ]);
 });
 
@@ -37,8 +37,8 @@ test('parseYamlFile parses simple YAML', () => {
   const content = 'foo: bar\nbaz: qux';
   const entries = parseYamlFile(content, 'test.yaml');
   expect(entries).toEqual([
-    { key: 'foo', value: 'bar', file: 'test.yaml', rawValue: 'bar' },
     { key: 'baz', value: 'qux', file: 'test.yaml', rawValue: 'qux' },
+    { key: 'foo', value: 'bar', file: 'test.yaml', rawValue: 'bar' },
   ]);
 });
 
@@ -46,8 +46,8 @@ test('parseTomlFile parses simple TOML', () => {
   const content = 'foo = "bar"\nbaz = 42';
   const entries = parseTomlFile(content, 'test.toml');
   expect(entries).toEqual([
-    { key: 'foo', value: 'bar', file: 'test.toml', rawValue: 'bar' },
     { key: 'baz', value: '42', file: 'test.toml', rawValue: 42 },
+    { key: 'foo', value: 'bar', file: 'test.toml', rawValue: 'bar' },
   ]);
 });
 
@@ -57,12 +57,12 @@ test('parseIniFile parses sections and keys with hierarchical structure', () => 
   expect(entries).toEqual([
     { 
       key: 'section', 
-      value: '{ foo: bar, baz: qux }', 
+      value: '{ baz: qux, foo: bar }', 
       file: 'test.ini',
-      rawValue: { foo: 'bar', baz: 'qux' }
+      rawValue: { baz: 'qux', foo: 'bar' }
     },
-    { key: 'section.foo', value: 'bar', file: 'test.ini' },
     { key: 'section.baz', value: 'qux', file: 'test.ini' },
+    { key: 'section.foo', value: 'bar', file: 'test.ini' },
   ]);
 });
 
