@@ -38,3 +38,6 @@ examples/
 
 # ConfiGREP backup (unencrypted)
 backup.json
+
+# Documentation (keeping internal for now)
+docs/
